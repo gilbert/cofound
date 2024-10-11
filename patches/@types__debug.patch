@@ -1,0 +1,13 @@
+diff --git a/index.d.ts b/index.d.ts
+index 3778eb8dbc44c7f5f462edb7f403238d4d39a428..6ac4e76741ce3023afbf14364f8d438ee8bf7635 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -37,7 +37,7 @@ declare namespace debug {
+     type IDebugger = Debugger;
+ 
+     interface Debugger {
+-        (formatter: any, ...args: any[]): void;
++        (...args: any[]): void;
+ 
+         color: string;
+         diff: number;

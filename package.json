@@ -1,0 +1,84 @@
+{
+  "name": "cofound",
+  "version": "0.0.2",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "test": "sin dev script test/run-tests.ts"
+  },
+  "bin": {
+    "cof": "./bin/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@simplewebauthn/browser": "^10.0.0",
+    "@simplewebauthn/server": "^10.0.1",
+    "@simplewebauthn/types": "^10.0.0",
+    "@types/debug": "4.x",
+    "@types/node": "*",
+    "@types/ospec": "^4.2.0",
+    "@types/uuid": "*",
+    "better-sqlite3": ">= 10",
+    "dayjs": "^1.11.13",
+    "debug": "^4.3.6",
+    "iron-webcrypto": "^1.2.1",
+    "nanoid": "^5.0.7",
+    "ospec": "^4.2.1",
+    "p-limit": "^6.1.0",
+    "prexit": "^2.3.0",
+    "readtheroom": "^2.0.0",
+    "sin": "github:porsager/sin",
+    "typescript": "^5.5.4",
+    "uuid": "^10.0.0",
+    "zod": "3.x"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/root.js",
+      "types": "./dist/root.d.ts"
+    },
+    "./backend": {
+      "import": "./dist/backend/index.js",
+      "types": "./dist/backend/index.d.ts"
+    },
+    "./backend/env": {
+      "import": "./dist/backend/env.js",
+      "types": "./dist/backend/env.d.ts"
+    },
+    "./backend/test": {
+      "import": "./dist/backend/test/index.js",
+      "types": "./dist/backend/test/index.d.ts"
+    },
+    "./backend/pods/*": {
+      "import": "./dist/backend/pods/*.js",
+      "types": "./dist/backend/pods/*.d.ts"
+    },
+    "./frontend": {
+      "import": "./dist/frontend/index.js",
+      "types": "./dist/frontend/index.d.ts"
+    },
+    "./shared/*": {
+      "import": "./dist/shared/*.js",
+      "types": "./dist/shared/*.d.ts"
+    }
+  },
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+    "tsup": "^8.2.4"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "vendor-types",
+    "README.md"
+  ],
+  "pnpm": {
+    "patchedDependencies": {
+      "@types/debug": "patches/@types__debug.patch"
+    }
+  }
+}
