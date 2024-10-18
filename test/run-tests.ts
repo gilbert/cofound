@@ -1,6 +1,7 @@
 import fs from 'fs'
 import o from 'ospec'
 import path from 'path'
+import prexit from 'prexit'
 import 'sin/env'
 import 'sin/server/window'
 

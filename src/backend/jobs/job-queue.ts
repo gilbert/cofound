@@ -13,7 +13,7 @@ import { CF_BaseModel, Sql } from '../models/base-model'
 import { CF_Runtime } from '../runtime'
 import { jobQueueSchema } from './job-queue-schema'
 
-type JobRecord = Selectable<typeof jobQueueSchema.queue_jobs>
+type JobRecord = Selectable<typeof jobQueueSchema.queue_jobs.cols>
 
 type JobQueueEnv = { name: string }
 
@@ -26,13 +26,13 @@ export type JobBackoffStrategy = (retries: number) => number
 
 class JobModel extends CF_BaseModel<typeof jobQueueSchema.queue_jobs, BaseDbConn> {
   protected tablename = 'queue_jobs'
-  protected columns = jobQueueSchema.queue_jobs
+  protected table = jobQueueSchema.queue_jobs
 
   CHUNK_SIZE = 1000
 
   create = this.insert
 
-  update(id: number, attrs: Updateable<typeof jobQueueSchema.queue_jobs>) {
+  update(id: number, attrs: Updateable<JobRecord>) {
     return this._updateWhere({ id }, attrs)
   }
 

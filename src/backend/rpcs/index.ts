@@ -5,9 +5,13 @@ import { SinRequest } from '../../types/sin-types'
 import { HttpSession } from '../http/http-session'
 import { CF_Runtime } from '../runtime'
 
-export type BaseRpcCtx<AppRuntime extends CF_Runtime<any>, SessionData, AnonSessionData> = {
+export type BaseRpcCtx<
+  AppRuntime extends CF_Runtime<any>,
+  SessionData = {},
+  AnonSessionData = {},
+> = {
   r: SinRequest
-  init: AppRuntime['get']
+  get: AppRuntime['get']
   models: AppRuntime['models']
   /** WARNING: Using this in a public_ rpc will break at runtime */
   session: SessionData & { user_id: number }

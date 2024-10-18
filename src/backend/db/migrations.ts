@@ -2,13 +2,12 @@ import color from 'sin/bin/color'
 
 import { objectEntries, objectKeys } from '../../shared/object-utils'
 import { BaseDbConn } from './make-db'
-import { Column, SchemaDef, SchemaExtra, col, datatypeToSql } from './schema'
+import { Column, SchemaDef, col, datatypeToSql } from './schema'
 
 type Options = {
   db: BaseDbConn
   env: { name: string }
   schema: SchemaDef
-  schemaExtra?: SchemaExtra<any>
   /**
    * If undefined, then attempts to migrate no matter what.
    * If string, then only migrates if the target version has not been applied.
@@ -16,13 +15,7 @@ type Options = {
    * */
   targetVersion?: string | false
 }
-export function migrateAppDatabase({
-  db,
-  env,
-  schema,
-  schemaExtra = {},
-  targetVersion,
-}: Options): boolean {
+export function migrateAppDatabase({ db, env, schema, targetVersion }: Options): boolean {
   let shouldApply = targetVersion === undefined ? true : false
   if (targetVersion) {
     db.exec(`
@@ -78,7 +71,7 @@ export function migrateAppDatabase({
 
     actualColumns.set(name, columns)
 
-    const tableSchema = schema[name as keyof typeof schema]
+    const tableSchema = schema[name]?.cols
     if (!tableSchema) {
       if (name !== MIGRATIONS_TABLE) {
         log(`${color.cyan('Skipping')} ${name}`)
@@ -135,7 +128,7 @@ export function migrateAppDatabase({
         colname !== 'created_at' &&
         colname !== 'updated_at'
       ) {
-        log(`${color.magenta}Remove column${color.reset} ${name}.${colname}`)
+        log(`${color.magenta('Remove column')} ${name}.${colname}`)
         changed = true
         tablesChanged.add(name)
       }
@@ -151,17 +144,17 @@ export function migrateAppDatabase({
   }
 
   // Check for new custom indexes
-  for (const [table, meta] of Object.entries(schemaExtra)) {
-    if (!meta) continue
-    for (const _idxSql of meta.indexes) {
+  for (const [tableName, table] of Object.entries(schema)) {
+    if (!table.indexes) continue
+    for (const _idxSql of table.indexes) {
       const idxSql = normalizeMetaIndex(_idxSql)
       const compare = idxSql.replace(/;$/, '') // Sqlite doesn't store the semicolon
       if (!actualIndexes.find((i) => i.sql === compare)) {
         const indexNameRegex = /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(\w+)/
         log(`${color.magenta('New index')} ${idxSql.match(indexNameRegex)![1]}`)
-        const indexes = newIndexes.get(table) || []
+        const indexes = newIndexes.get(tableName) || []
         indexes.push(idxSql)
-        newIndexes.set(table, indexes)
+        newIndexes.set(tableName, indexes)
       }
     }
   }
@@ -171,7 +164,7 @@ export function migrateAppDatabase({
     return false
   } else if (!shouldApply) {
     throw new Error(
-      `${color.yellow}Floating changes detected!${color.reset} Run \`cof migrate\` to apply them in dev, or \`cof migrate bump\` to apply them in prod.`,
+      `${color.yellow('Floating changes detected!')} Run \`pnpm run migrate\` to apply them in dev, or \`pnpm run migrate bump\` to apply them in prod.`,
     )
   }
 
@@ -186,7 +179,7 @@ export function migrateAppDatabase({
     // Clear out since we're handing these directly
     newIndexes.delete(name)
 
-    const tableSchema = schema[name as keyof typeof schema]!
+    const tableSchema = schema[name as keyof typeof schema]!.cols
     const columns = objectEntries(tableSchema)
       .concat(
         (() => {
@@ -224,7 +217,7 @@ export function migrateAppDatabase({
     const indexes = objectEntries(tableSchema)
       .filter(([_, col]) => col.meta.index)
       .map(([colname, _]) => createIndexSql(name, colname, tableSchema[colname]!))
-      .concat((schemaExtra[name]?.indexes || []).map(normalizeMetaIndex))
+      .concat((schema[name]?.indexes || []).map(normalizeMetaIndex))
       .join('\n')
 
     // Remove since we're handling them directly
@@ -232,7 +225,7 @@ export function migrateAppDatabase({
 
     if (!actualTables.find((t) => t.name === name)) {
       if (env.name !== 'test') {
-        log(`${color.green}Create table${color.reset} ${name}`)
+        log(`${color.green('Create table')} ${name}`)
       }
       const sql = `
         CREATE TABLE ${name} (\n  ${columns}\n);
@@ -243,7 +236,7 @@ export function migrateAppDatabase({
       continue
     }
 
-    log(`${color.green}Migrate table${color.reset} ${name}`)
+    log(`${color.green('Migrate table')} ${name}`)
 
     const colPairs = objectKeys(tableSchema)
       .filter(
@@ -282,7 +275,7 @@ export function migrateAppDatabase({
   }
 
   for (let [tablename, indexes] of newIndexes) {
-    log(`${color.green}Create indexes (${indexes.length})${color.reset} ${tablename}`)
+    log(`${color.green(`Create indexes (${indexes.length})`)} ${tablename}`)
     const deletes = indexes.map((sql) => `DROP INDEX IF EXISTS ${getIndexName(sql)};`)
     db.exec(deletes.join('\n'))
     db.exec(indexes.join('\n'))

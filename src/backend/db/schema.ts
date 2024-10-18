@@ -1,11 +1,13 @@
 import { bufferToUuidString, stringToUuidBuffer } from '../../shared/buffer-utils'
 
 export type SchemaDef = Record<string, TableDef>
-export type TableDef = Record<string, Column<any>>
-export type SchemaExtra<T> = Partial<{ [K in keyof T]: SchemaExtraDef }>
-
-type SchemaExtraDef = {
-  indexes: string[]
+export type TableDef = {
+  cols: TableCols
+  indexes?: string[]
+}
+export type TableCols = Record<string, Column<any>>
+export type SchemaCols<T extends SchemaDef> = {
+  [K in keyof T]: T[K]['cols']
 }
 
 export function col<T extends DataType>(type: T, opts?: ColumnOptions): Column<ToTs[T]> {
@@ -32,7 +34,9 @@ col.enum = <T extends string>(enumOptions: readonly T[]) =>
 /** Underlying TEXT column */
 col.json = <T = {}>() => col('json') as Column<T>
 
-col.uuid = () =>
+col.uuid = () => col.text().index('unique').default(`uuid_v4()`)
+
+col.uuid_binary = () =>
   col
     .blob()
     .index('unique')
@@ -40,7 +44,7 @@ col.uuid = () =>
       serialize: stringToUuidBuffer,
       deserialize: bufferToUuidString,
     })
-    .default(`uuid_v4()`)
+    .default(`uuid_v4_binary()`)
 
 col.generated = <T extends DataType>(type: T): Column<ToTs[T], ToTs[T] | undefined, ToTs[T]> => {
   return new Column(type)

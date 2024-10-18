@@ -3,7 +3,7 @@ import { randomInt } from 'crypto'
 import { err, ok } from '../../shared/result'
 import { CF_BaseAction } from '../actions/base-action'
 import { BaseDbConn } from '../db/make-db'
-import { SchemaDef, SchemaExtra, col } from '../db/schema'
+import { SchemaDef, col } from '../db/schema'
 import { DevEmailer, Emailer } from '../email'
 import { CF_BaseModel, Sql } from '../models/base-model'
 
@@ -25,8 +25,8 @@ export namespace CF_OtpPod {
     /** How many OTP attempts are allowed before locking the user out. Default: 3 */
     maxAttempts: 3,
 
-    /** How long to wait before a user can resend an OTP. Default: 1m */
-    resendWaitTime: 60 * 1000,
+    /** How long to wait before a user can resend an OTP. Default: 45s */
+    resendWaitTime: 45 * 1000,
 
     /**
      * Override this to change how OTPs are generated.
@@ -47,6 +47,7 @@ export namespace CF_OtpPod {
       switch (intent) {
         case 'recover':
         case 'signup':
+        case 'login':
           return 'email'
         default:
           const _exhaustiveCheck: never = intent
@@ -61,8 +62,9 @@ export namespace CF_OtpPod {
     generateEmailContent(intent: OtpIntent, code: string) {
       const actionText = (
         {
-          recover: 'account recovery process',
+          login: 'login process',
           signup: 'validation process',
+          recover: 'account recovery process',
         } satisfies Record<OtpIntent, string>
       )[intent]
 
@@ -93,35 +95,33 @@ ${config.env.APP_NAME}
   }
 
   export type OtpIntent = (typeof intents)[number]
-  export const intents = ['signup', 'recover'] as const
+  export const intents = ['signup', 'login', 'recover'] as const
 
   /** To broaden this type (e.g. 'email' | 'text'), you must first eject this pod (TS limitation). */
   export type OtpTargetType = 'email'
 
   export const schema = {
     otps: {
-      id: col.primary(),
-      uuid: col.uuid(),
-      code: col.text(),
-      intent: col.enum(intents),
-      target_type: col.text(),
-      target_id: col.integer(),
-      expires_at: col.timestamp(),
+      cols: {
+        id: col.primary(),
+        uuid: col.uuid(),
+        code: col.text(),
+        intent: col.enum(intents),
+        target_type: col.text(),
+        target_id: col.integer(),
+        created_at: col.created_at(),
+        expires_at: col.timestamp(),
+      },
+      indexes: [
+        // For faster target lookups
+        'CREATE INDEX otps_target ON otps (target_type, target_id)',
+      ],
     },
   } satisfies SchemaDef
 
-  export const schemaExtra: SchemaExtra<typeof schema> = {
-    otps: {
-      indexes: [
-        // For faster target lookups
-        'CREATE INDEX ON otps (target_type, target_id)',
-      ],
-    },
-  }
-
   export class Otp extends CF_BaseModel<typeof schema.otps, BaseDbConn> {
     protected tablename = 'otps'
-    protected columns = schema.otps
+    protected table = schema.otps
 
     generateForEmail(params: {
       intent: OtpIntent
@@ -165,12 +165,12 @@ ${config.env.APP_NAME}
       if (existingCodes.length >= config.maxAttempts) {
         const oldest = existingCodes[existingCodes.length - 1]!
         const minutesLeft = Math.ceil((oldest.expires_at - Date.now()) / 60000)
-        return err('too_many_otps', 'e85413525', { status: 400, meta: { minutesLeft } })
+        return err('too_many_otps', 'ep45413525', { status: 400, meta: { minutesLeft } })
       }
       const newest = existingCodes[0]
-      if (newest && newest.expires_at > Date.now() + config.resendWaitTime) {
-        const minutesLeft = Math.ceil((newest.expires_at - Date.now()) / 60000)
-        return err('resend_too_soon', 'e85413526', { status: 400, meta: { minutesLeft } })
+      if (newest && newest.created_at > Date.now() + config.resendWaitTime) {
+        const minutesLeft = Math.ceil((newest.created_at - Date.now()) / 60000)
+        return err('resend_too_soon', 'ep45413526', { status: 400, meta: { minutesLeft } })
       }
       const otp = Otp.generateForEmail({ intent, target_type, target_id })
 
@@ -192,10 +192,10 @@ ${config.env.APP_NAME}
       const { Otp } = this.models
       const otp = Otp.findByOptional('otp_id' in by ? { id: by.otp_id } : by)
       if (!otp || otp.expires_at < Date.now()) {
-        return err('expired_code', 'e57111243')
+        return err('expired_code', 'ep457111243')
       }
       if (otp.code !== code) {
-        return err('invalid_code', 'e66934958')
+        return err('invalid_code', 'ep486934958')
       }
       Otp.markUsed(otp.id)
 

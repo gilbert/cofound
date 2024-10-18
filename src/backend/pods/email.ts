@@ -1,5 +1,5 @@
 import { BaseDbConn } from '../db/make-db'
-import { SchemaExtra, col } from '../db/schema'
+import { SchemaDef, col } from '../db/schema'
 import { CF_BaseModel } from '../models/base-model'
 
 export namespace CF_EmailPod {
@@ -8,20 +8,20 @@ export namespace CF_EmailPod {
 
   export const schema = {
     emails: {
-      id: col.primary(),
-      email: col.text(),
-      primary: col.boolean().default(`0`),
-      /** NULL here indicates an unverified attempted signup */
-      user_id: col.integer().references().nullable(),
-      verified_at: col.timestamp().nullable(),
+      cols: {
+        id: col.primary(),
+        email: col.text(),
+        primary: col.boolean().default(`0`),
+        /** NULL here indicates an unverified attempted signup */
+        user_id: col.integer().references().nullable(),
+        verified_at: col.timestamp().nullable(),
+      },
     },
-  }
-
-  export const schemaExtra: SchemaExtra<typeof schema> = {}
+  } satisfies SchemaDef
 
   export class Email extends CF_BaseModel<typeof schema.emails, BaseDbConn> {
     protected tablename = 'emails'
-    protected columns = schema.emails
+    protected table = schema.emails
 
     create(attrs: { email: string; user_id?: number }) {
       // Be internally consistent around primary emails

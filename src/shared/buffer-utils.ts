@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from 'uuid'
 
+export function newUuidV4() {
+  return uuidv4()
+}
+
 export function newUuidV4Buffer() {
   const buffer = Buffer.alloc(16)
   uuidv4(null, buffer)

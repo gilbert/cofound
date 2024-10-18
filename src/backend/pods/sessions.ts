@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 
 import { BaseDbConn } from '../db/make-db'
-import { SchemaExtra, col } from '../db/schema'
+import { SchemaDef, col } from '../db/schema'
 import { CF_BaseModel } from '../models/base-model'
 
 const DAY = 1000 * 60 * 60 * 24
@@ -17,19 +17,19 @@ export namespace CF_SessionsPod {
 
   export const schema = {
     sessions: {
-      id: col.primary(),
-      sid: col.text(),
-      user_id: col.integer().references(),
-      expires_at: col.timestamp(),
-      data: col.json(),
+      cols: {
+        id: col.primary(),
+        sid: col.text(),
+        user_id: col.integer().references(),
+        expires_at: col.timestamp(),
+        data: col.json(),
+      },
     },
-  }
-
-  export const schemaExtra: SchemaExtra<typeof schema> = {}
+  } satisfies SchemaDef
 
   export class Session extends CF_BaseModel<typeof schema.sessions, BaseDbConn> {
     protected tablename = 'sessions'
-    protected columns = schema.sessions
+    protected table = schema.sessions
 
     /** Returns the new session's sid */
     create({ user_id, expires_at }: { user_id: number; expires_at?: number }) {

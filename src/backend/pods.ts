@@ -1,20 +1,15 @@
 import { BaseDbConn } from './db/make-db'
-import { SchemaExtra } from './db/schema'
 
 export type Pod<Schema, DbConn, Models, SessionData, AnonSessionData> = {
   defaultSessionData: () => SessionData
   defaultAnonSessionData: () => AnonSessionData
   schema: Schema
-  schemaExtra: SchemaExtra<Schema>
   makeModels: (db: DbConn) => Models
 }
 export function composePods<T extends Pod<any, any, any, any, any>[]>(scaffolds: T) {
   return {
     get schemas(): Intersect<InferArray<T>['schema']> {
       return reduceProp(scaffolds, 'schema')
-    },
-    get schemaExtras(): Intersect<InferArray<T>['schemaExtra']> {
-      return reduceProp(scaffolds, 'schemaExtra')
     },
     makeModels(db: BaseDbConn): Intersect<InferArray<T>['makeModels']> {
       return scaffolds.reduce((acc, pod) => {

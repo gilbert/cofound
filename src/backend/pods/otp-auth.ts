@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
-import { err, ok } from '../../shared/result'
+import { ErrResult, OkResult, Result, err, ok } from '../../shared/result'
 import { CF_BaseAction } from '../actions/base-action'
 import { BaseDbConn } from '../db/make-db'
-import { SchemaDef, SchemaExtra, col } from '../db/schema'
+import { SchemaDef } from '../db/schema'
 import { HttpSession } from '../http/http-session'
 import { BaseRpcCtx, makeRpcDefiner } from '../rpcs'
 import { CF_Runtime } from '../runtime'
@@ -19,9 +19,17 @@ export namespace CF_OtpAuthPod {
   export const config = {
     OtpPod: CF_OtpPod,
 
-    /** Instructs the pod how to create a user upon registeration success. */
-    createUser({}: { email: string }): Promise<number> {
-      throw new Error('Not implemented')
+    /**
+     * Instructs the pod how to create a user upon registeration success.
+     *
+     * Because of TS limitations, only 'unexpected' errors are allowed.
+     **/
+    createUser({}: {
+      email: string
+    }): Result<number, 'unexpected'> | Promise<Result<number, 'unexpected'>> {
+      throw new Error(
+        `Not implemented. If you see this, then you need to assign CF_OtpAuthPod.config.createUser`,
+      )
     },
   }
 
@@ -29,16 +37,15 @@ export namespace CF_OtpAuthPod {
   type HttpSess = HttpSession<AnonSessionData, {}>
 
   export const schema = {} satisfies SchemaDef
-  export const schemaExtra: SchemaExtra<typeof schema> = {}
 
   export class Actions extends CF_BaseAction<RequiredModels> {
-    OtpActions = this.init(config.OtpPod.Actions)
+    OtpActions = this.get(config.OtpPod.Actions)
 
     async sendRegisterOtp({ email: emailStr, session }: { email: string; session: HttpSess }) {
       const { Email } = this.models
       let email = Email.findByOptional({ email: emailStr })
       if (email && email.user_id) {
-        return err('email_taken', 'e142685')
+        return err('email_taken', 'ep47142685')
       }
       email ||= Email.findBy({ id: Email.create({ email: emailStr }) })
 
@@ -57,7 +64,7 @@ export namespace CF_OtpAuthPod {
     async verifyRegisterOtp({ code, session }: { code: string; session: HttpSess }) {
       const { Email } = this.models
       const { otp_id } = (await session.getAnon()) || {}
-      if (!otp_id) return err('expired_code', 'e26596735')
+      if (!otp_id) return err('expired_code', 'ep426596735')
 
       const res = this.OtpActions.verify({ code, by: { otp_id } })
       if (!res.ok) return res
@@ -71,9 +78,7 @@ export namespace CF_OtpAuthPod {
           session.create(email.user_id)
         } else {
           // Register
-          const res = await err.catch('user_create_failed', 'e5017428453', async () =>
-            config.createUser({ email: email.email }),
-          )
+          const res = await config.createUser({ email: email.email })
           if (!res.ok) return res
           session.create(res.value)
         }
@@ -82,21 +87,29 @@ export namespace CF_OtpAuthPod {
           Email.markVerified(email.id)
         }
       } else {
-        return err('invalid_target', 'e957147385', { meta: { target_type } })
+        return err('invalid_target', 'ep957147385', { meta: { target_type, x: 10 } })
       }
 
       return ok({})
     }
 
-    async sendRecoveryOtp({ email: emailStr, session }: { email: string; session: HttpSess }) {
+    async sendLoginOtp({
+      email: emailStr,
+      session,
+      intent,
+    }: {
+      email: string
+      session: HttpSess
+      intent?: 'login' | 'recover'
+    }) {
       const { Email } = this.models
       let email = Email.findByOptional({ email: emailStr })
       if (!email || !email.user_id) {
-        return err('email_not_found', 'e511459312')
+        return err('email_not_registered', 'ep511459312')
       }
       const otp = await this.OtpActions.send({
         email: email.email,
-        intent: 'recover',
+        intent: intent || 'login',
         target_id: email.id,
       })
       if (!otp.ok) return otp
@@ -105,10 +118,10 @@ export namespace CF_OtpAuthPod {
       return otp
     }
 
-    async verifyRecoveryOtp({ code, session }: { code: string; session: HttpSess }) {
+    async verifyLoginOtp({ code, session }: { code: string; session: HttpSess }) {
       const { Email } = this.models
       const { otp_id } = (await session.getAnon()) || {}
-      if (!otp_id) return err('expired_code', 'e57141231')
+      if (!otp_id) return err('expired_code', 'ep57141231')
 
       const res = await this.OtpActions.verify({ code, by: { otp_id } })
       if (!res.ok) return res
@@ -119,11 +132,11 @@ export namespace CF_OtpAuthPod {
         const email = Email.findBy({ id: target_id })
         if (!email.user_id) {
           // Not recoverable
-          return err('email_not_registered', 'e55722851')
+          return err('email_not_registered', 'ep55722851')
         }
         session.create(email.user_id)
       } else {
-        return err('invalid_target', 'e911459312', { meta: { target_type } })
+        return err('invalid_target', 'ep911459312', { meta: { target_type, y: '20' } })
       }
 
       return ok({})
@@ -148,36 +161,37 @@ export namespace CF_OtpAuthPod {
   export function makeRpcs<R extends RequiredCtx>() {
     const def = makeRpcDefiner<R>()
     return {
-      rpc_sendRegisterOtp: def(
+      public_rpc_sendRegisterOtp: def(
         z.object({
           email: z.string().email(),
         }),
         async function execute({ email }) {
-          return this.init(Actions).sendRegisterOtp({ email, session: this.httpSession })
+          return this.get(Actions).sendRegisterOtp({ email, session: this.httpSession })
         },
       ),
-      rpc_verifyRegisterOtp: def(
+      public_rpc_verifyRegisterOtp: def(
         z.object({
           code: z.string(),
         }),
         async function execute({ code }) {
-          return this.init(Actions).verifyRegisterOtp({ code, session: this.httpSession })
+          return this.get(Actions).verifyRegisterOtp({ code, session: this.httpSession })
         },
       ),
-      rpc_sendRecoveryOtp: def(
+      public_rpc_sendLoginOtp: def(
         z.object({
           email: z.string().email(),
+          intent: z.optional(z.enum(['login', 'recover'])),
         }),
-        async function execute({ email }) {
-          return this.init(Actions).sendRecoveryOtp({ email, session: this.httpSession })
+        async function execute({ email, intent }) {
+          return this.get(Actions).sendLoginOtp({ email, intent, session: this.httpSession })
         },
       ),
-      rpc_verifyRecoveryOtp: def(
+      public_rpc_verifyLoginOtp: def(
         z.object({
           code: z.string(),
         }),
         async function execute({ code }) {
-          return this.init(Actions).verifyRecoveryOtp({ code, session: this.httpSession })
+          return this.get(Actions).verifyLoginOtp({ code, session: this.httpSession })
         },
       ),
     }

@@ -22,6 +22,9 @@ importers:
       '@simplewebauthn/types':
         specifier: ^10.0.0
         version: 10.0.0
+      '@types/better-sqlite3':
+        specifier: ^7.6.11
+        version: 7.6.11
       '@types/debug':
         specifier: 4.x
         version: 4.1.12(patch_hash=unn5e5wxqosj5uhvxmgv4kqv7y)
@@ -55,6 +58,9 @@ importers:
       p-limit:
         specifier: ^6.1.0
         version: 6.1.0
+      path-to-regexp:
+        specifier: ^3.0.0
+        version: 3.3.0
       prexit:
         specifier: ^2.3.0
         version: 2.3.0
@@ -62,11 +68,14 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       sin:
-        specifier: github:porsager/sin
-        version: git+https://git@github.com:porsager/sin.git#cdaa84eca5099ffb76a9fe622f7cec4697ea45c6
+        specifier: github:gilbert/sin
+        version: git+https://git@github.com:gilbert/sin.git#973082779ed0e6707ef8d9520ab37743b2c1ae76
       typescript:
         specifier: ^5.5.4
         version: 5.5.4
+      url-join:
+        specifier: ^5.0.0
+        version: 5.0.0
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
@@ -445,6 +454,9 @@ packages:
     peerDependenciesMeta:
       '@vue/compiler-sfc':
         optional: true
+
+  '@types/better-sqlite3@7.6.11':
+    resolution: {integrity: sha512-i8KcD3PgGtGBLl3+mMYA8PdKkButvPyARxA7IQAd6qeslht13qxb1zzO8dRCtE7U3IoJS782zDBAeoKiM695kg==}
 
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
@@ -889,6 +901,9 @@ packages:
     resolution: {integrity: sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA==}
     engines: {node: '>=16 || 14 >=14.18'}
 
+  path-to-regexp@3.3.0:
+    resolution: {integrity: sha512-qyCH421YQPS2WFDxDjftfc1ZR5WKQzVzqsp4n9M2kQhVOo/ByahFoUNJfl58kOcEGfQ//7weFTDhm+ss8Ecxgw==}
+
   path-type@4.0.0:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
@@ -1013,8 +1028,8 @@ packages:
   simple-get@4.0.1:
     resolution: {integrity: sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA==}
 
-  sin@git+https://git@github.com:porsager/sin.git#cdaa84eca5099ffb76a9fe622f7cec4697ea45c6:
-    resolution: {commit: cdaa84eca5099ffb76a9fe622f7cec4697ea45c6, repo: git@github.com:porsager/sin.git, type: git}
+  sin@git+https://git@github.com:gilbert/sin.git#973082779ed0e6707ef8d9520ab37743b2c1ae76:
+    resolution: {commit: 973082779ed0e6707ef8d9520ab37743b2c1ae76, repo: git@github.com:gilbert/sin.git, type: git}
     version: 1.0.0-rc.1
     engines: {node: '>=20.11'}
     hasBin: true
@@ -1134,6 +1149,10 @@ packages:
 
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+
+  url-join@5.0.0:
+    resolution: {integrity: sha512-n2huDr9h9yzd6exQVnH/jU5mr+Pfx08LRXXZhkLLetAMESRj+anQsTAh940iMrIetKAmry9coFuZQ2jY8/p3WA==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -1491,6 +1510,10 @@ snapshots:
       prettier: 3.3.3
     transitivePeerDependencies:
       - supports-color
+
+  '@types/better-sqlite3@7.6.11':
+    dependencies:
+      '@types/node': 20.14.12
 
   '@types/debug@4.1.12(patch_hash=unn5e5wxqosj5uhvxmgv4kqv7y)':
     dependencies:
@@ -1904,6 +1927,8 @@ snapshots:
       lru-cache: 10.4.3
       minipass: 7.1.2
 
+  path-to-regexp@3.3.0: {}
+
   path-type@4.0.0: {}
 
   picocolors@1.0.1: {}
@@ -2021,7 +2046,7 @@ snapshots:
       once: 1.4.0
       simple-concat: 1.0.1
 
-  sin@git+https://git@github.com:porsager/sin.git#cdaa84eca5099ffb76a9fe622f7cec4697ea45c6:
+  sin@git+https://git@github.com:gilbert/sin.git#973082779ed0e6707ef8d9520ab37743b2c1ae76:
     dependencies:
       esbuild: 0.23.0
 
@@ -2149,6 +2174,8 @@ snapshots:
   typescript@5.5.4: {}
 
   undici-types@5.26.5: {}
+
+  url-join@5.0.0: {}
 
   util-deprecate@1.0.2: {}
 

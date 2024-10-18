@@ -3,7 +3,7 @@ import o from 'ospec'
 import { ErrResult, OkResult, Result } from '../../shared/result'
 import { makeBaseDb } from '../db/make-db'
 import { migrateAppDatabase } from '../db/migrations'
-import { SchemaDef, SchemaExtra } from '../db/schema'
+import { SchemaDef } from '../db/schema'
 import { makeRuntime } from '../runtime'
 
 export const TEST_SEED = process.env.TEST_SEED || Math.floor(Math.random() * 800) + 120
@@ -21,15 +21,14 @@ export function cf_makeTestRuntime<Schema extends SchemaDef, Models>(params: {
   env: CF_TestEnv
   models: Models
   schema: Schema
-  schemaExtra: SchemaExtra<Schema>
 
   fresh?: boolean
   jobQueueConcurrency?: number
 }) {
-  const { env, schema, schemaExtra, models } = params
+  const { env, schema, models } = params
   const db = params.fresh ? makeBaseDb(':memory:') : globalTestDb
   if (params.fresh || !hasMigrated) {
-    migrateAppDatabase({ db, env, schema, schemaExtra })
+    migrateAppDatabase({ db, env, schema })
     if (!params.fresh) hasMigrated = true
   }
   return makeRuntime(db, models, env)

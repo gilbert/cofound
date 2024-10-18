@@ -11,7 +11,7 @@ import {
 } from '../../shared/object-utils'
 import { OkResult, err, ok } from '../../shared/result'
 import { BaseDbConn } from '../db/make-db'
-import { Column, Insertable, Selectable, Updateable } from '../db/schema'
+import { Insertable, Selectable, TableDef, Updateable } from '../db/schema'
 import { UidAlphabet, generateUid } from './generate-uid'
 
 const $sqlType: unique symbol = Symbol.for('sqlType')
@@ -33,7 +33,6 @@ type Gt<T> = { [$sqlType]: typeof $gt; value: T }
 type Gte<T> = { [$sqlType]: typeof $gte; value: T }
 
 export const Sql = {
-  // in: <T>(...values: T[]): DistributeIn<In<T>> => ({ [$sqlType]: $in, values }) as any,
   in: <T>(...values: T[]): In<T> => ({ [$sqlType]: $in, values }),
   notEq: <T>(value: T): NotEq<T> => ({ [$sqlType]: $notEq, value }),
   notNull: { [$sqlType]: $notNull },
@@ -43,21 +42,18 @@ export const Sql = {
   gte: <T>(value: T): Gte<T> => ({ [$sqlType]: $gte, value }),
 } as const
 
-export abstract class CF_BaseModel<
-  Cols extends Record<string, Column<any>>,
-  DbConn extends BaseDbConn,
-> {
+export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbConn> {
   protected abstract tablename: string
 
-  protected abstract columns: Cols
+  protected abstract table: Tb
 
   private logSql = debug('cf:sql')
 
-  protected defaultWhere: Partial<Selectable<Cols>> = {}
+  protected defaultWhere: Partial<Selectable<Tb['cols']>> = {}
 
   constructor(protected db: DbConn) {}
 
-  makeValidate<Checks extends Partial<Record<keyof Cols, z.ZodTypeAny>>>(checks: Checks) {
+  makeValidate<Checks extends Partial<Record<keyof Tb['cols'], z.ZodTypeAny>>>(checks: Checks) {
     return function <E extends string>(
       errReason: E,
       errCode: string,
@@ -74,24 +70,24 @@ export abstract class CF_BaseModel<
     }
   }
 
-  makePick<K extends keyof Cols>(keys: K[]) {
+  makePick<K extends keyof Tb['cols']>(keys: K[]) {
     return <T extends Record<K, any> | Falsey>(obj: T) => pickMaybe(obj, keys)
   }
 
-  findAll(_attrs: Queryable<Cols>, extraSql = ''): Selectable<Cols>[] {
+  findAll(_attrs: Queryable<Tb['cols']>, extraSql = ''): Selectable<Tb['cols']>[] {
     const attrs = { ...this.defaultWhere, ..._attrs }
     const select = this.db.prepare(`${this._selectWhere(attrs)} ${extraSql}`)
     return select.all(this.serialize(attrs)).map((row) => this.deserialize(row as any) as any)
   }
 
-  findByOptional(_attrs: Queryable<Cols>): Selectable<Cols> | null {
+  findByOptional(_attrs: Queryable<Tb['cols']>): Selectable<Tb['cols']> | null {
     const attrs = { ...this.defaultWhere, ..._attrs }
     const select = this.db.prepare(`${this._selectWhere(attrs)} LIMIT 1`)
     const row = (select.get(this.serialize(attrs)) as any) || null
     return row && this.deserialize(row)
   }
 
-  findBy(_attrs: Queryable<Cols>): Selectable<Cols> {
+  findBy(_attrs: Queryable<Tb['cols']>): Selectable<Tb['cols']> {
     const attrs = { ...this.defaultWhere, ..._attrs }
     return this.require(
       this.findByOptional(attrs),
@@ -101,7 +97,7 @@ export abstract class CF_BaseModel<
 
   private _selectWhere(where: Record<string, any>) {
     const cols = Object.keys(where).filter(
-      (c) => (where as any)[c] !== undefined && c in this.columns,
+      (c) => (where as any)[c] !== undefined && c in this.table.cols,
     )
     // If no cols in query, don't attach WHERE clause
     // This is useful for queries that only want to use custom sql
@@ -113,7 +109,7 @@ export abstract class CF_BaseModel<
     return `SELECT * FROM ${this.tablename} ${whereSql}`
   }
 
-  protected insert(attrs: Insertable<Cols>) {
+  protected insert(attrs: Insertable<Tb['cols']>) {
     try {
       const id = this._insert(
         attrs,
@@ -126,7 +122,7 @@ export abstract class CF_BaseModel<
     }
   }
 
-  protected insertOrIgnore(ignoreCols: (keyof Cols)[], attrs: Insertable<Cols>) {
+  protected insertOrIgnore(ignoreCols: (keyof Tb['cols'])[], attrs: Insertable<Tb['cols']>) {
     return this._insert(
       attrs,
       (cols, vars) =>
@@ -135,9 +131,9 @@ export abstract class CF_BaseModel<
   }
 
   protected insertOrReplace(
-    conflictCols: (keyof Cols)[],
-    setOnConflictCols: (keyof Cols)[],
-    attrs: Insertable<Cols>,
+    conflictCols: (keyof Tb['cols'])[],
+    setOnConflictCols: (keyof Tb['cols'])[],
+    attrs: Insertable<Tb['cols']>,
   ) {
     return this._insert(
       attrs,
@@ -148,9 +144,9 @@ export abstract class CF_BaseModel<
     )
   }
 
-  private _insert(_attrs: Insertable<Cols>, getSql: (cols: string, vars: string) => string) {
+  private _insert(_attrs: Insertable<Tb['cols']>, getSql: (cols: string, vars: string) => string) {
     const attrs = { ..._attrs }
-    for (let [col, def] of objectEntries(this.columns)) {
+    for (let [col, def] of objectEntries(this.table.cols)) {
       if (def.meta.transform?.default && !(col in attrs)) {
         ;(attrs as any)[col] = def.meta.transform.default()
       } else if (def.datatype === 'json' && !(col in attrs)) {
@@ -158,7 +154,7 @@ export abstract class CF_BaseModel<
       }
     }
     const keys = Object.keys(attrs).filter(
-      (c) => (attrs as any)[c] !== undefined && c in this.columns,
+      (c) => (attrs as any)[c] !== undefined && c in this.table.cols,
     )
     const cols = keys.map((c) => `[${c}]`).join(', ')
     const vars = keys.map((k) => `@${k}`).join(', ')
@@ -172,23 +168,23 @@ export abstract class CF_BaseModel<
     return (row as any).id as number
   }
 
-  protected _updateWhere(where: Partial<Selectable<Cols>>, set: Updateable<Cols>) {
+  protected _updateWhere(where: Partial<Selectable<Tb['cols']>>, set: Updateable<Tb['cols']>) {
     this._update(where, set)
   }
 
-  protected _updateById(id: number, set: Updateable<Cols>) {
+  protected _updateById(id: number, set: Updateable<Tb['cols']>) {
     // @ts-expect-error
     this._update({ id }, set)
   }
 
-  private _update(_where: Partial<Selectable<Cols>>, set: Updateable<Cols>) {
+  private _update(_where: Partial<Selectable<Tb['cols']>>, set: Updateable<Tb['cols']>) {
     const where = { ...this.defaultWhere, ..._where }
     const whereCols = Object.keys(where)
-      .filter((c) => (where as any)[c] !== undefined && c in this.columns)
+      .filter((c) => (where as any)[c] !== undefined && c in this.table.cols)
       .map((c) => whereCol(c, (where as any)[c]))
       .join(' AND ')
     const setCols = Object.keys(set)
-      .filter((c) => (set as any)[c] !== undefined && c in this.columns)
+      .filter((c) => (set as any)[c] !== undefined && c in this.table.cols)
       .concat('updated_at')
       .map((c) => `[${c}] = @set_${c}`)
       .join(', ')
@@ -204,14 +200,14 @@ export abstract class CF_BaseModel<
     update.run({ ...whereValues, ...setValues })
   }
 
-  protected deleteWhere(where: Partial<Selectable<Cols>>) {
+  protected deleteWhere(where: Partial<Selectable<Tb['cols']>>) {
     this._delete(where)
   }
 
-  private _delete(_where: Partial<Selectable<Cols>>) {
+  private _delete(_where: Partial<Selectable<Tb['cols']>>) {
     const where = { ...this.defaultWhere, ..._where }
     const whereCols = Object.keys(where)
-      .filter((c) => (where as any)[c] !== undefined && c in this.columns)
+      .filter((c) => (where as any)[c] !== undefined && c in this.table.cols)
       .map((c) => whereCol(c, (where as any)[c]))
       .join(' AND ')
 
@@ -228,9 +224,9 @@ export abstract class CF_BaseModel<
 
   protected generateUid(
     length: number,
-    { column = 'uid', alphabet }: { column?: keyof Cols; alphabet?: UidAlphabet } = {},
+    { column = 'uid', alphabet }: { column?: keyof Tb['cols']; alphabet?: UidAlphabet } = {},
   ) {
-    if (!this.columns[column]) {
+    if (!this.table.cols[column as any]) {
       throw new Error(`Table ${this.tablename} does not have a uid column`)
     }
     // TODO: Change to be optimistic for performance
@@ -244,7 +240,7 @@ export abstract class CF_BaseModel<
   protected serialize = (row: Record<string, any>, mode?: 'select' | 'insert') => {
     const isSelect = mode !== 'insert'
     const values: Record<string, any> = {}
-    for (let k of Object.keys(this.columns).concat('created_at', 'updated_at')) {
+    for (let k of Object.keys(this.table.cols).concat('created_at', 'updated_at')) {
       if (!(k in row) || row[k] === undefined) {
         continue
       }
@@ -253,7 +249,7 @@ export abstract class CF_BaseModel<
         continue
       }
 
-      const def = this.columns[k]!
+      const def = this.table.cols[k]!
       const datatype = def.datatype
 
       let val = row[k]
@@ -330,10 +326,10 @@ export abstract class CF_BaseModel<
 
   protected deserialize = <Row extends Record<string, any>>(
     row: Row,
-  ): Selectable<{ [K in keyof Row]: K extends keyof Cols ? Cols[K] : Row[K] }> => {
+  ): Selectable<{ [K in keyof Row]: K extends keyof Tb['cols'] ? Tb['cols'][K] : Row[K] }> => {
     const values: Record<string, any> = {}
     for (let k of Object.keys(row)) {
-      const def = this.columns[k]
+      const def = this.table.cols[k]
       const datatype = k === 'created_at' || k === 'updated_at' ? 'unixepoch' : def?.datatype
       // TODO: Less hardcoding
       // prettier-ignore
