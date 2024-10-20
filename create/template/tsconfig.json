@@ -1,0 +1,21 @@
+{
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "index.tsx",
+  ],
+  "exclude": [
+    "node_modules",
+  ],
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "jsx": "react",
+    "jsxFactory": "s",
+    "jsxFragmentFactory": "s.jsx",
+    "noUncheckedIndexedAccess": true,
+  }
+}

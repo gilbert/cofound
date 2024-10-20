@@ -1,17 +1,18 @@
 # Cofound – The Fullstack Framework that's Just Code
 
-Cofound is a modern, opinionated TypeScript web framework for Sin. Its main goal is to keep your code as maintainable as possible, while still being scalable for most medium scale apps.
+Cofound is a modern, opinionated TypeScript web framework for Sin. Its main goal is to keep your code as maintainable as possible, while being trivially scalable for medium-scale apps, which cover nearly all applications on the web.
 
 Cofound provides built-in support for:
 
+- Pre (static sites) and server-side rendering
 - Session & Passkey auth
 - SQLite query models and schema management
 - Simple RPCs for frontend-backend interactions
 
-## Code Generators
+## Quick Start
 
-Once you've defined a table `examples` in your `+/schema.ts`, you can generate a model file for that table like so:
+You can cofound a new project using the `cofound-create` command:
 
 ```bash
-cof g model examples
+npx cofound-create myapp
 ```
