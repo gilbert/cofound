@@ -121,3 +121,7 @@ export const Modal = cc<Attrs>(function(attrs) {
 ## Timeouts
 
 Within a cc component closure, you can call `this.setTimeout` and `this.setInterval` to do their respective global equivalents. This automatically cleans up timeout ids when the component unmounts.
+
+## Architecture Guidelines
+
+- A frontend component file name should be TitleCase (e.g. `frontend/pages/SignupPage.tsx` for `SignupPage`)

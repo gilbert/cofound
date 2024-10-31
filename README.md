@@ -1,4 +1,4 @@
-# Cofound – The Fullstack Framework that's Just Code
+# Cofound – The AI-friendly Fullstack Framework
 
 Cofound is a modern, opinionated TypeScript web framework for Sin. Its main goal is to keep your code as maintainable as possible, while being trivially scalable for medium-scale apps, which cover nearly all applications on the web.
 
@@ -18,6 +18,8 @@ npx cofound-create myapp
 ```
 
 ## Project Structure
+
+![Architecture Diagram](https://github.com/user-attachments/assets/6e132367-0e7d-43b2-93be-7149e2145490)
 
 Example walkthrough:
 

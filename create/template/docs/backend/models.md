@@ -23,6 +23,7 @@ export abstract class BaseModel<Cols extends TableDef> extends CF_BaseModel<Cols
 This makes it easy to extend it to create new models:
 
 ```ts
+// +/models/user-model.ts
 import { Selects } from '../schema'
 import { BaseModel, schema } from './base-model'
 
@@ -253,6 +254,7 @@ class User extends BaseModel<typeof schema.users> {
 
 ## Architecture Guidelines
 
+- A model file name should be kebab-case (e.g. `+/models/favorite-food-model.ts` for `FavoriteFood`)
 - A model should never expose the internals of its I/O
   - e.g. A model should not expose details of SQL, sqlite3, 3rd party APIs, etc.
 - A model should only be concerned with its own scope, and not others
