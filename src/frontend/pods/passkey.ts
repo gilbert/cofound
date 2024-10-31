@@ -4,7 +4,7 @@ import {
   PublicKeyCredentialRequestOptionsJSON,
 } from '@simplewebauthn/types'
 
-import { err } from '../../shared/result'
+import { err } from '../../result'
 
 export async function getLoginAttestation(
   errCode: string,

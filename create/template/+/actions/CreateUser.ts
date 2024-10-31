@@ -1,4 +1,4 @@
-import { err, ok } from 'cofound/shared/result'
+import { err, ok } from 'cofound/result'
 
 import { BaseAction } from './base-action'
 

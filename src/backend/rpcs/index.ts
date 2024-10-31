@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { ErrResult, Result } from '../../shared/result'
+import { ErrResult, Result } from '../../result'
 import { SinRequest } from '../../types/sin-types'
 import { HttpSession } from '../http/http-session'
 import { CF_Runtime } from '../runtime'

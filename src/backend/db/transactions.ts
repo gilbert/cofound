@@ -1,4 +1,4 @@
-import { ErrResult, Result, err } from '../../shared/result'
+import { ErrResult, Result, err } from '../../result'
 import { BaseDbConn } from './make-db'
 
 /**

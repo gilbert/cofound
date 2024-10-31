@@ -1,6 +1,6 @@
 import o from 'ospec'
 
-import { ErrResult, OkResult, Result } from '../../shared/result'
+import { ErrResult, OkResult, Result } from '../../result'
 import { makeBaseDb } from '../db/make-db'
 import { migrateAppDatabase } from '../db/migrations'
 import { SchemaDef } from '../db/schema'

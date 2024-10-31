@@ -1,4 +1,4 @@
-import { ErrResult, OkResult, Result } from '../shared/result'
+import { ErrResult, OkResult, Result } from '../result'
 
 export type MakeRpcTypes<
   AllRpcsTyped extends Record<string, { run: (...args: any[]) => Promise<Result<any, any>> }>,

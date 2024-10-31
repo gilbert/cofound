@@ -3,7 +3,7 @@
 // That's why Cofound puts this file in your app's frontend/lib folder.
 // Update this file as you need to update the auth logic for your RPCs.
 //
-import { ErrResult, OkResult, err } from 'cofound/shared/result'
+import { ErrResult, OkResult, err } from 'cofound/result'
 
 import type { Rpcs } from '../../shared/app-types'
 import { routes } from '../routes'
@@ -12,7 +12,7 @@ import { APP_NAME } from './frontend-env'
 
 export const client = makeRpcClient()
 
-export * from 'cofound/shared/result'
+export * from 'cofound/result'
 
 export type { Params, Results, Oks, Errs, Values } from '../../shared/app-types'
 

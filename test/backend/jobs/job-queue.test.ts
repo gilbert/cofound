@@ -3,8 +3,8 @@ import o from 'ospec'
 import { CF_BaseJob, JobQueue, JobRunMeta } from '../../../src/backend'
 import { jobQueueSchema } from '../../../src/backend/jobs/job-queue-schema'
 import { cf_makeTestRuntime } from '../../../src/backend/test'
+import { err, ok } from '../../../src/result'
 import { sleep } from '../../../src/shared/function-utils'
-import { err, ok } from '../../../src/shared/result'
 import { testEnv } from '../../test-helper'
 
 o.spec('JobQueue', () => {

@@ -1,4 +1,4 @@
-import { ok } from 'cofound/shared/result'
+import { ok } from 'cofound/result'
 import fs from 'fs/promises'
 
 import { rpc, z } from '../lib/rpc-context'

@@ -1,6 +1,6 @@
 import { randomInt } from 'crypto'
 
-import { err, ok } from '../../shared/result'
+import { err, ok } from '../../result'
 import { CF_BaseAction } from '../actions/base-action'
 import { BaseDbConn } from '../db/make-db'
 import { SchemaDef, col } from '../db/schema'
@@ -145,7 +145,7 @@ ${config.env.APP_NAME}
     }
 
     markUsed(id: number) {
-      this._updateWhere({ id }, { expires_at: 0 })
+      this.updateWhere({ id }, { expires_at: 0 })
     }
   }
 

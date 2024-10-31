@@ -43,12 +43,12 @@ export namespace CF_SessionsPod {
     patch(sid: string, attrs: any) {
       const session = this.findByOptional({ sid })
       if (!session) return
-      this._updateWhere({ sid }, { data: { ...session.data, ...attrs } })
+      this.updateWhere({ sid }, { data: { ...session.data, ...attrs } })
     }
 
     /** WARNING: Untyped for flexibility, be careful! */
     put(sid: string, attrs: any) {
-      this._updateWhere({ sid }, { data: attrs })
+      this.updateWhere({ sid }, { data: attrs })
     }
   }
 

@@ -33,11 +33,11 @@ export namespace CF_EmailPod {
 
     setUserId(id: number, user_id: number) {
       const existing = this.findByOptional({ user_id: user_id, primary: true })
-      this._updateWhere({ id }, { user_id, primary: !existing })
+      this.updateWhere({ id }, { user_id, primary: !existing })
     }
 
     markVerified(id: number) {
-      this._updateWhere({ id }, { verified_at: Date.now() })
+      this.updateWhere({ id }, { verified_at: Date.now() })
     }
   }
 

@@ -4,7 +4,7 @@
 // As you need to update the auth logic for your RPCs, feel free to add it below.
 //
 import { HttpSession, SinRequest } from 'cofound/backend'
-import { err } from 'cofound/shared/result'
+import { err } from 'cofound/result'
 
 import { AppRuntime, getAppRuntime } from './app-runtime'
 import { CORS } from './cors'
@@ -57,12 +57,7 @@ const rpcRouter = async (runtime: AppRuntime, r: SinRequest) => {
     return r.end(JSON.stringify(error), 400, jsonCORS)
   }
 
-  const ctx = makeProcCtx({
-    r,
-    runtime,
-    session: session!,
-    httpSession: httpSession,
-  })
+  const ctx = makeProcCtx({ r, runtime, session, httpSession })
 
   const argsDebug = Object.keys(argsResult.data)
   if (!excludeRpcLogs.includes(procName)) {

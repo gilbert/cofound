@@ -4,8 +4,8 @@ import pLimit from 'p-limit'
 import path from 'path'
 import prexit from 'prexit'
 
+import { ErrResult, OkResult, Result, err } from '../../result'
 import { sleep } from '../../shared/function-utils'
-import { ErrResult, OkResult, Result, err } from '../../shared/result'
 import { CF_BaseAction } from '../actions/base-action'
 import { BaseDbConn } from '../db/make-db'
 import { Selectable, Updateable } from '../db/schema'
@@ -33,7 +33,7 @@ class JobModel extends CF_BaseModel<typeof jobQueueSchema.queue_jobs, BaseDbConn
   create = this.insert
 
   update(id: number, attrs: Updateable<JobRecord>) {
-    return this._updateWhere({ id }, attrs)
+    return this.updateWhere({ id }, attrs)
   }
 
   fail(id: number, error: string) {

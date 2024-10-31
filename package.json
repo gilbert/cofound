@@ -70,6 +70,10 @@
       "import": "./dist/frontend/pods/*.js",
       "types": "./dist/frontend/pods/*.d.ts"
     },
+    "./result": {
+      "import": "./dist/result.js",
+      "types": "./dist/result.d.ts"
+    },
     "./shared/*": {
       "import": "./dist/shared/*.js",
       "types": "./dist/shared/*.d.ts"

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { ErrResult, OkResult, Result, err, ok } from '../../shared/result'
+import { ErrResult, OkResult, Result, err, ok } from '../../result'
 import { CF_BaseAction } from '../actions/base-action'
 import { BaseDbConn } from '../db/make-db'
 import { SchemaDef } from '../db/schema'

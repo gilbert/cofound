@@ -1,7 +1,7 @@
 import { ClientActions, ResultLoader, cc } from 'cofound/frontend'
 import { getNewPasskeyAttestation } from 'cofound/frontend/pods/passkey'
+import { ok } from 'cofound/result'
 import { formatDate } from 'cofound/shared/date-utils'
-import { ok } from 'cofound/shared/result'
 import s from 'sin'
 
 import { Layout } from '../../Layout'

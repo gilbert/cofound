@@ -1,11 +1,12 @@
 import s from 'sin'
 
-import { ErrResult, OkResult } from '../shared/result'
+import { ErrResult, OkResult } from '../result'
 
 export function DataLoader<T>(fn: () => Promise<T>) {
   let data: T
   let error: any
   let loading = true
+  let isFirstLoad = true
 
   const handle = {
     get data() {
@@ -18,6 +19,9 @@ export function DataLoader<T>(fn: () => Promise<T>) {
     get loading() {
       return loading
     },
+    get firstLoad() {
+      return isFirstLoad
+    },
 
     reload() {
       return fn()
@@ -25,10 +29,12 @@ export function DataLoader<T>(fn: () => Promise<T>) {
           (res) => {
             data = res
             loading = false
+            isFirstLoad = false
           },
           (err) => {
             error = err
             loading = false
+            isFirstLoad = false
           },
         )
         .finally(() => s.redraw())

@@ -1,6 +1,6 @@
 import s from 'sin'
 
-import { ErrResult, Result, err } from '../shared/result'
+import { ErrResult, Result, err } from '../result'
 
 /**
  *
@@ -83,7 +83,8 @@ export function ClientActions<T extends Record<string, (...args: any) => Promise
           s.redraw()
           return res
         } catch (e) {
-          errors[p] = err('unknown', 'e570582347', { meta: { error: e } })
+          errors[p] = err('unknown', 'e570582347c', { meta: { error: e } })
+          console.log(`Error in ClientAction.${String(p)}:`, e)
           loading[p] = undefined
           s.redraw()
         }

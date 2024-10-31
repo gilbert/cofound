@@ -14,7 +14,7 @@ export class User extends BaseModel<typeof schema.users> {
     })
   }
 
-  update = this._updateWhere
+  update = this.updateWhere
 
   findByEmailOptional(email: string) {
     return this.db

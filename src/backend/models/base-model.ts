@@ -1,6 +1,7 @@
 import debug from 'debug'
 import { z } from 'zod'
 
+import { OkResult, err, ok } from '../../result'
 import {
   Falsey,
   isObject,
@@ -9,7 +10,6 @@ import {
   pickMaybe,
   stringifyDebug,
 } from '../../shared/object-utils'
-import { OkResult, err, ok } from '../../shared/result'
 import { BaseDbConn } from '../db/make-db'
 import { Insertable, Selectable, TableDef, Updateable } from '../db/schema'
 import { UidAlphabet, generateUid } from './generate-uid'
@@ -89,7 +89,7 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
 
   findBy(_attrs: Queryable<Tb['cols']>): Selectable<Tb['cols']> {
     const attrs = { ...this.defaultWhere, ..._attrs }
-    return this.require(
+    return this.assert(
       this.findByOptional(attrs),
       `Could not find ${this.tablename} with attrs: ${stringifyDebug(attrs)}`,
     )
@@ -168,11 +168,11 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     return (row as any).id as number
   }
 
-  protected _updateWhere(where: Partial<Selectable<Tb['cols']>>, set: Updateable<Tb['cols']>) {
+  protected updateWhere(where: Partial<Selectable<Tb['cols']>>, set: Updateable<Tb['cols']>) {
     this._update(where, set)
   }
 
-  protected _updateById(id: number, set: Updateable<Tb['cols']>) {
+  protected updateById(id: number, set: Updateable<Tb['cols']>) {
     // @ts-expect-error
     this._update({ id }, set)
   }
@@ -215,7 +215,7 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     deleteQuery.run(this.serialize(where))
   }
 
-  protected require<T>(row: T | null | undefined, errorMsg?: string): T {
+  protected assert<T>(row: T | null | undefined, errorMsg?: string): T {
     if (row === null || row === undefined) {
       throw new Error(errorMsg || `[${this.tablename}] Could not find record`)
     }

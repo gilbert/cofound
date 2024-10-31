@@ -1,6 +1,6 @@
 import { ClientActions, cc } from 'cofound/frontend'
 import { getNewPasskeyAttestation } from 'cofound/frontend/pods/passkey'
-import { ok } from 'cofound/shared/result'
+import { ok } from 'cofound/result'
 import s from 'sin'
 
 import { Layout } from '../../Layout'

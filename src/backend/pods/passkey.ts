@@ -13,8 +13,8 @@ import {
 } from '@simplewebauthn/types'
 import { z } from 'zod'
 
+import { err, ok } from '../../result'
 import { formatDate } from '../../shared/date-utils'
-import { err, ok } from '../../shared/result'
 import { NoReadonly } from '../../shared/type-utils'
 import { CF_BaseAction } from '../actions/base-action'
 import { BaseDbConn } from '../db/make-db'
@@ -90,7 +90,7 @@ export namespace CF_PasskeyPod {
     register = this.insert
 
     updateCounter(id: number, counter: number) {
-      this._updateWhere({ id }, { counter })
+      this.updateWhere({ id }, { counter })
     }
 
     delete(id: number) {
