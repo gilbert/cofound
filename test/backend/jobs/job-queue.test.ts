@@ -1,6 +1,6 @@
 import o from 'ospec'
 
-import { CF_BaseJob, JobQueue, JobRunMeta } from '../../../src/backend'
+import { CF_BaseJob, JobFailMeta, JobQueue, JobRunMeta } from '../../../src/backend'
 import { jobQueueSchema } from '../../../src/backend/jobs/job-queue-schema'
 import { cf_makeTestRuntime } from '../../../src/backend/test'
 import { err, ok } from '../../../src/result'
@@ -14,7 +14,6 @@ o.spec('JobQueue', () => {
       fresh: true,
       models: {},
       schema: jobQueueSchema,
-      schemaExtra: {},
       jobQueueConcurrency: opts.concurrency,
     })
   }

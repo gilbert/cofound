@@ -8,9 +8,9 @@ export abstract class BaseJob extends CF_BaseJob<Models> {
   // backoffStrategy JobBackoffStrategy = this.jobQueue.backoffStrategies.exponential()
 
   /**
-   * Overwrite this to handle when this job fails too many times.
+   * Overwrite this in a subclass to handle when this job fails too many times.
    * @param params The parameters of the job that failed.
    * @param meta Metadata about the failure.
    */
-  onFinalFailure(_params: any, _meta: JobFailMeta) {}
+  // onFinalFailure(params: any, meta: JobFailMeta) {}
 }

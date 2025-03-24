@@ -92,7 +92,7 @@ export abstract class CF_BaseJob<Models> extends CF_BaseAction<Models> {
   backoffStrategy: JobBackoffStrategy = this.jobQueue.backoffStrategies.exponential()
 
   abstract run(params: any, meta: JobRunMeta): Promise<OkResult | ErrResult>
-  abstract onFinalFailure(params: any, meta: JobFailMeta): void
+  onFinalFailure(_params: any, _meta: JobFailMeta) {}
 }
 
 /** Cache for test suite performance */
