@@ -82,12 +82,17 @@ class JobModel extends CF_BaseModel<typeof jobQueueSchema.queue_jobs, BaseDbConn
 export type JobRunMeta = {
   currentRetry: number
 }
+export type JobFailMeta = {
+  aborted: boolean
+  currentRetry: number
+}
 export abstract class CF_BaseJob<Models> extends CF_BaseAction<Models> {
   delay = 0
   retryLimit = 3
   backoffStrategy: JobBackoffStrategy = this.jobQueue.backoffStrategies.exponential()
 
   abstract run(params: any, meta: JobRunMeta): Promise<OkResult | ErrResult>
+  abstract onFinalFailure(params: any, meta: JobFailMeta): void
 }
 
 /** Cache for test suite performance */
@@ -356,6 +361,10 @@ export class JobQueue {
       const errorDetails = JSON.stringify(result)
       if (retries > options.retryLimit || result.meta?.abort) {
         this.model.fail(job.id, errorDetails)
+        instance.onFinalFailure(JSON.parse(job.args), {
+          aborted: !(retries > options.retryLimit),
+          currentRetry: retries,
+        })
       } else {
         const delay = instance.backoffStrategy(retries)
         this.model.update(job.id, {
