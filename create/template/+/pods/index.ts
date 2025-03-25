@@ -1,5 +1,6 @@
 import { composePods } from 'cofound/backend'
 import { CF_EmailPod } from 'cofound/backend/pods/email'
+import { CF_JobQueuePod } from 'cofound/backend/pods/job-queue'
 import { CF_OtpPod } from 'cofound/backend/pods/otp'
 import { CF_OtpAuthPod } from 'cofound/backend/pods/otp-auth'
 import { CF_PasskeyPod } from 'cofound/backend/pods/passkey'
@@ -18,6 +19,7 @@ export const EmailPod = CF_EmailPod
 export const OtpPod = CF_OtpPod
 export const OtpAuthPod = CF_OtpAuthPod
 export const PasskeyPod = CF_PasskeyPod
+export const JobQueuePod = CF_JobQueuePod
 
 //
 // Configure pods here
@@ -35,7 +37,14 @@ PasskeyPod.config.passkeysConfig = passkeysConfig
 //
 // Compose for automatic schema and model initialization
 //
-export const allPods = composePods([SessionsPod, PasskeyPod, OtpPod, OtpAuthPod, EmailPod] as const)
+export const allPods = composePods([
+  JobQueuePod,
+  SessionsPod,
+  PasskeyPod,
+  OtpPod,
+  OtpAuthPod,
+  EmailPod,
+] as const)
 
 export type PodsSessionData = ReturnType<(typeof allPods)['defaultSessionData']>
 export type PodsAnonSessionData = ReturnType<(typeof allPods)['defaultAnonSessionData']>
