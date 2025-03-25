@@ -33,7 +33,7 @@ const rpcRouter = async (runtime: AppRuntime, r: SinRequest) => {
   const procName = userMatch?.[1] || publicMatch?.[1]
   const proc = procName && rpcByName.hasOwnProperty(procName) && rpcByName[procName]
   if (!proc) {
-    return r.status(404).end('Proc not found')
+    return r.status(404).end(JSON.stringify(err('proc_not_found', 'rr404', { status: 404 })))
   }
 
   const httpSession = new HttpSession<any, any>(runtime.models.Session, r, {
