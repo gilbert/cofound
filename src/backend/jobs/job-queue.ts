@@ -80,6 +80,7 @@ class JobModel extends CF_BaseModel<typeof jobQueueSchema.queue_jobs, BaseDbConn
 }
 
 export type JobRunMeta = {
+  job_id: number
   currentRetry: number
 }
 export type JobFailMeta = {
@@ -349,6 +350,7 @@ export class JobQueue {
     try {
       this.log(`Running job ${job.id}: ${job.type}`, job.args)
       result = await (instance as any)[method](JSON.parse(job.args), {
+        job_id: job.id,
         currentRetry: job.retries || 0,
       })
       this.model.updateStatus(job.id, 'success')
