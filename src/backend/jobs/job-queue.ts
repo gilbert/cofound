@@ -189,7 +189,7 @@ export class JobQueue {
       } else {
         const jobClasses = {} as typeof this.jobClasses
         const files = await fs.promises.readdir(this.jobDirectory)
-        const jobFiles = files.filter((file) => file.endsWith('Job.ts'))
+        const jobFiles = files.filter((file) => file.endsWith('Job.ts') || file.endsWith('-job.ts'))
         for (const file of jobFiles) {
           const jobModule = await import(path.join(this.jobDirectory, file))
           for (const key of Object.keys(jobModule)) {
