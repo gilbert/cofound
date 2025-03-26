@@ -25,7 +25,8 @@ export function cf_makeTestRuntime<Schema extends SchemaDef, Models>(params: {
   fresh?: boolean
   jobQueueConcurrency?: number
 }) {
-  const { env, schema, models } = params
+  const env = { ...params.env, jobDirectory: '' }
+  const { schema, models } = params
   const db = params.fresh ? makeBaseDb(':memory:') : globalTestDb
   if (params.fresh || !hasMigrated) {
     migrateAppDatabase({ db, env, schema })
