@@ -16,6 +16,7 @@ export type CF_Runtime<Models> = {
 
 export type CF_RuntimeEnv = {
   name: string
+  jobDirectory: string
 }
 
 export function makeRuntime<Models>(
@@ -31,7 +32,7 @@ export function makeRuntime<Models>(
     return cache.get(Class)
   }
   const cache = new Map<Initable<Models>, any>()
-  const jobDirectory = new URL('../jobs', import.meta.url).pathname
+  const jobDirectory = env.jobDirectory
   const jobQueue: JobQueue = new JobQueue({ jobDirectory, db, env, get: get })
   const runtime = { get, db, models, jobQueue }
   return runtime

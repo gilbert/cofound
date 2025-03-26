@@ -6,7 +6,7 @@ const __dirname = new URL('.', import.meta.url).pathname
 export const env = Env(['development', 'test', 'production'])
 
 /** Used for non-user-facing code */
-export const APP_NAME = 'MyApp'
+export const APP_NAME = 'myapp'
 
 export const isScript = read('SIN_SCRIPT', '', (v) => v === 'true')
 export const isBuild = read('SIN_BUILD', '', (v) => v === 'true')
@@ -36,3 +36,11 @@ export const passkeysConfig = {
 export const SESSION_SECRET = env.branch('dev-secret-that-is-at-least-32-chars', {
   production: () => read('SESSION_SECRET'),
 })
+
+/**
+ * Cofound Config
+ */
+export const cofoundEnv = {
+  name: env.name,
+  jobDirectory: new URL('../jobs', import.meta.url).pathname,
+}

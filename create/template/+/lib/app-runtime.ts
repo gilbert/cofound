@@ -4,7 +4,7 @@ import { Models, makeModels } from '../models'
 import { PodsAnonSessionData, PodsSessionData } from '../pods'
 import { schema } from '../schema'
 import { db } from './db'
-import { env } from './env'
+import { cofoundEnv as env } from './env'
 
 let runtime: AppRuntime | undefined
 
