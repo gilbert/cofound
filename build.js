@@ -27,6 +27,7 @@ await build({
   sourcemap: true,
   dts: true,
   watch: process.argv.includes('--watch'),
+  splitting: false,
 })
 
 // For each file in vendor-types, add a reference to each entry file
