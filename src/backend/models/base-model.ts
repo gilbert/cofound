@@ -23,6 +23,7 @@ const $lt: unique symbol = Symbol.for('lt')
 const $lte: unique symbol = Symbol.for('lte')
 const $gt: unique symbol = Symbol.for('gt')
 const $gte: unique symbol = Symbol.for('gte')
+const $like: unique symbol = Symbol.for('like')
 
 type NotNull = (typeof Sql)['notNull']
 type NotEq<T> = { [$sqlType]: typeof $notEq; value: T }
@@ -31,6 +32,7 @@ type Lt<T> = { [$sqlType]: typeof $lt; value: T }
 type Lte<T> = { [$sqlType]: typeof $lte; value: T }
 type Gt<T> = { [$sqlType]: typeof $gt; value: T }
 type Gte<T> = { [$sqlType]: typeof $gte; value: T }
+type Like<T> = { [$sqlType]: typeof $like; value: T }
 
 export const Sql = {
   in: <T>(...values: T[]): In<T> => ({ [$sqlType]: $in, values }),
@@ -40,6 +42,7 @@ export const Sql = {
   lte: <T>(value: T): Lte<T> => ({ [$sqlType]: $lte, value }),
   gt: <T>(value: T): Gt<T> => ({ [$sqlType]: $gt, value }),
   gte: <T>(value: T): Gte<T> => ({ [$sqlType]: $gte, value }),
+  like: <T>(value: T): Like<T> => ({ [$sqlType]: $like, value }),
 } as const
 
 export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbConn> {
@@ -272,7 +275,8 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
         sqlType === $lt ||
         sqlType === $lte ||
         sqlType === $gt ||
-        sqlType === $gte
+        sqlType === $gte ||
+        sqlType === $like
       ) {
         val = (val as NotEq<any> | Lt<any> | Lte<any> | Gt<any> | Gte<any>).value
       }
@@ -381,6 +385,8 @@ function whereValEq(bindingName: string, value: any) {
     ? `> @${bindingName}`
     : sqlType === $gte
     ? `>= @${bindingName}`
+    : sqlType === $like
+    ? `LIKE @${bindingName} ESCAPE '\\'`
     : `= @${bindingName}`
 }
 
@@ -429,6 +435,7 @@ type QueryColType<T> = [NonNullable<T>] extends [object]
       | Lte<NonNullable<T>>
       | Gt<NonNullable<T>>
       | Gte<NonNullable<T>>
+      | Like<NonNullable<T>>
 
 type Present<T extends Record<string, any>> = {
   [K in keyof T]: NonNullable<T[K]>
