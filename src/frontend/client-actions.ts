@@ -74,6 +74,7 @@ export function ClientActions<T extends Record<string, (...args: any) => Promise
       return async (...args: any) => {
         errors.clear()
         loading[p] = args[0] === undefined ? {} : args[0]
+        s.redraw()
         try {
           const res = await actions[p]!(...args)
           loading[p] = undefined
