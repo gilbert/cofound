@@ -21,12 +21,42 @@ export type HttpSessionEnv = {
   cookieExpirationSeconds?: number
 }
 
+/**
+ * Options for setting cookies. Based on standard Set-Cookie attributes.
+ */
+export type CookieOptions = {
+  /** The maximum duration (in seconds) the cookie should be stored. */
+  maxAge?: number
+  /** The specific date/time when the cookie should expire. (maxAge is often preferred) */
+  // expires?: Date; // uncomment if you need this specifically
+  /** Restricts the cookie to a specific domain. */
+  domain?: string
+  /** Restricts the cookie to a specific path. Defaults to '/' in most cases. */
+  path?: string
+  /** If true, the cookie is only sent over HTTPS. */
+  secure?: boolean
+  /** If true, the cookie cannot be accessed via client-side JavaScript. Recommended. */
+  httpOnly?: boolean
+  /** Controls cross-site request behavior ('strict', 'lax', 'none'). */
+  sameSite?: 'strict' | 'lax' | 'none'
+}
+
 export class HttpSession<AnonSessionData, SessionData> {
   constructor(
     private Session: SessionModel<SessionData>,
     private req: SinRequest,
     private env: HttpSessionEnv,
-  ) {}
+    private cookieOptions: CookieOptions = {},
+  ) {
+    this.cookieOptions = {
+      httpOnly: true,
+      secure: this.env.secure || false, // Should be true in production over HTTPS
+      sameSite: 'lax', // Default to lax to avoid session redirect issues
+      path: '/',
+      domain: '', // Default: no domain attribute (browser uses current host)
+      ...this.cookieOptions,
+    }
+  }
 
   get(): (SessionData & { user_id: number }) | null {
     const sid = this.req.cookie(this.env.userCookieName)
@@ -51,13 +81,9 @@ export class HttpSession<AnonSessionData, SessionData> {
     this.req.cookie(
       this.env.userCookieName,
       sid,
-      removeFalseyValues({
-        httpOnly: true,
-        secure: this.env.secure || false,
-        // Cookie expiration time (in seconds)
-        // Subtract a few seconds to ensure the cookie expires before the session
-        maxAge: (Date.now() - expires_at) / 1000 - 5,
-        sameSite: 'strict',
+      removeNullyValues({
+        ...this.cookieOptions,
+        maxAge: Math.max(0, Math.floor((expires_at - Date.now()) / 1000) - 5), // 5 sec buffer
       }),
     )
     this.clear('anon')
@@ -82,11 +108,9 @@ export class HttpSession<AnonSessionData, SessionData> {
     this.req.cookie(
       this.env.anonCookieName,
       sealedSession,
-      removeFalseyValues({
-        HttpOnly: true,
-        secure: this.env.secure || false,
-        'Max-Age': this.env.cookieExpirationSeconds || ONE_DAY * 30, // Cookie expiration time (in seconds)
-        sameSite: 'strict',
+      removeNullyValues({
+        ...this.cookieOptions,
+        maxAge: this.env.cookieExpirationSeconds || ONE_DAY * 30, // Cookie expiration time (in seconds)
       }),
     )
   }
@@ -95,11 +119,9 @@ export class HttpSession<AnonSessionData, SessionData> {
     this.req.cookie(
       type === 'user' ? this.env.userCookieName : this.env.anonCookieName,
       '',
-      removeFalseyValues({
-        HttpOnly: true,
-        secure: this.env.secure || false,
-        'Max-Age': 0, // Set the cookie expiration to the past
-        sameSite: 'strict',
+      removeNullyValues({
+        ...this.cookieOptions,
+        maxAge: 0, // Set the cookie expiration to the past
       }),
     )
   }
@@ -107,6 +129,8 @@ export class HttpSession<AnonSessionData, SessionData> {
 
 const ONE_DAY = 24 * 60 * 60
 
-function removeFalseyValues(obj: any): any {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v))
+function removeNullyValues(obj: any): any {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v || typeof v === 'number' || typeof v === 'boolean'),
+  )
 }
