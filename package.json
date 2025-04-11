@@ -38,9 +38,6 @@
     "uuid": "^10.0.0",
     "zod": "3.x"
   },
-  "peerDependencies": {
-    "sin": "github:gilbert/sin"
-  },
   "exports": {
     ".": {
       "import": "./dist/root.js",
@@ -81,7 +78,8 @@
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
-    "tsup": "^8.2.4"
+    "tsup": "^8.2.4",
+    "sin": "github:gilbert/sin"
   },
   "files": [
     "bin",
