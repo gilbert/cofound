@@ -54,7 +54,14 @@ export type SinRequest = {
   // Outgoing
   //
   status: ((code: number) => SinRequest) & (() => number)
-  header: ((key: string, value: string) => SinRequest) & ((keyvals: Headers) => SinRequest)
+
+  //prettier-ignore
+  header:
+    ((key: string, value: string) => SinRequest) &
+    ((status: number, key: string, value: string) => SinRequest) &
+    ((keyvals: Headers) => SinRequest) &
+    ((status: number, keyvals: Headers) => SinRequest)
+
   end: (body?: string | Buffer, status?: number, headers?: Headers) => void
   tryEnd: (body?: string | Buffer) => void
   statusEnd: (status?: number, headers?: Headers) => void
