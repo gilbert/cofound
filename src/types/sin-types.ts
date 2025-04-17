@@ -1,4 +1,5 @@
 // Temporary until sin repo incorporates
+import { Readable, Writable } from 'stream'
 
 type Headers = Record<string, string>
 
@@ -36,6 +37,11 @@ export type SinRequest = {
   query: URLSearchParams
   /** An object of the matched routing params like. /authors/:author/books/:book = { author: 'Murray', book: 'Ethics of Liberty' } */
   params: Record<string, string>
+  /** Whether or not the request is https */
+  secure: boolean
+  protocol: string
+  ip: string
+  readable: Readable
   /** A function which reads the incoming body and transforms it to an optional type text or json. If no type is specificed a Buffer will be returned. */
   body: (() => Promise<Buffer>) &
     ((type: 'text') => Promise<string>) &
@@ -52,9 +58,23 @@ export type SinRequest = {
   end: (body?: string | Buffer, status?: number, headers?: Headers) => void
   tryEnd: (body?: string | Buffer) => void
   statusEnd: (status?: number, headers?: Headers) => void
-  write: () => void
-  cork: () => void
+  write: (content: string) => void
+  json: (body: any, status?: number, headers?: Headers) => void
+  html: (body: string) => void
+  file: (filePath: string, fileOptions?: any) => void
+
+  cork: (fn: () => void) => void
   offset: () => void
-  writable: () => void
   close: () => SinRequest
+  writable: Writable
+  pause: () => void
+  resume: () => void
+  getWriteOffset: () => number
+  proxy: (url: string, options: any) => void
+
+  onData: (callback: () => void) => void
+  onEnded: (callback: () => void) => void
+  onHandled: (callback: () => void) => void
+  onAborted: (callback: () => void) => void
+  // onWritable: ???
 }
