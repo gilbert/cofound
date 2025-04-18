@@ -1,5 +1,5 @@
 import pathToRegexp, { Key } from 'path-to-regexp'
-import s from 'sin'
+import s, { RouteChangeOptions } from 'sin'
 import urlJoin from 'url-join'
 
 //
@@ -30,10 +30,10 @@ type ExtendChildRoute<ParentT, ChildR> =
 type RouteKeys = keyof Route<[]>
 
 export type Route<T> = {
-  (..._params: T extends [] ? [] : [T]): string
-  visit(..._params: T extends [] ? [] : [T]): string
-  replace(..._params: T extends [] ? [] : [T]): string
-  isCurrent(..._params: T extends [] ? [] : [T]): boolean
+  (_params: T extends [] ? {} : T): string
+  visit(_params: T extends [] ? {} : T, options?: RouteChangeOptions): string
+  replace(_params: T extends [] ? {} : T, options?: RouteChangeOptions): string
+  isCurrent(_params: T extends [] ? {} : T): boolean
   src: string
   match: (url: string) => ParamsOrEmpty<T> | null
   match_p: (url: string) => ParamsOrEmpty<T> | null
@@ -117,14 +117,14 @@ function createRoute(
       match_p(url: string) {
         return _match(url, { partial: true })
       },
-      visit(..._params: any) {
-        s.route(_c(..._params))
+      visit(_params: any, options?: RouteChangeOptions) {
+        s.route(_c(_params), options)
       },
-      replace(..._params: any) {
-        s.route(_c(..._params), { replace: true })
+      replace(_params: any, options?: RouteChangeOptions) {
+        s.route(_c(_params), { ...options, replace: true })
       },
-      isCurrent(..._params: any) {
-        return _c(..._params) === window.location.pathname
+      isCurrent(_params: any) {
+        return _c(_params) === window.location.pathname
       },
 
       // Private! Only used for nested route construction

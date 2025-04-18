@@ -147,17 +147,48 @@ declare module 'sin' {
     (target: EventTarget, event: string, fn: (event: any) => any, options?: any): () => () => any
   }
 
+  export type RouteChangeOptions = {
+    state?: any
+    /** Use replaceState? (default: false) */
+    replace?: boolean
+    /** Trigger redraw? (default: true) */
+    redraw?: boolean
+    /** Scroll page to top? (default: true) */
+    scroll?: boolean
+  }
+
   interface Route {
-    (newPath: string, options?: { replace?: boolean }): void
-    (routes: Record<string, (urlParams: Record<string, any>) => Child>, options?: {}): JSX.Element
+    /** Navigate to a new path */
+    (newPath: string, options?: RouteChangeOptions): void
+
+    /** Define routes and render the matched view */
+    (
+      /** Example: route({ '/login': () => LoginComponent }) */
+      routes: Record<
+        string,
+        (
+          /** View function receives URL params merged with state/options */
+          params: Record<string, string | undefined> & Record<string, any>,
+        ) => Child
+      >, // View factory returns Child type
+      options?: Record<string, any>, // Attributes passed merged into params
+    ): JSX.Element
+
     query: {
-      get: (key: string) => string // Maybe?
-      set: (key: string, value: string | number) => string // Maybe?
-      replace: (x: any) => void
-      clear: () => void
+      get(key: string): string | undefined
+      set(key: string, value: string | number | boolean): void
+      replace(x: any): void
+      clear(): void
     }
-    has(x: any): boolean
-    readonly path: any
+
+    // Check if current path starts with subPath (e.g., for active links)
+    has(subPath: string): boolean
+
+    // Current active path segment for this route level
+    readonly path: string
+
+    // URL parameters extracted from the matched path
+    readonly params: Record<string, string | undefined>
   }
 
   // TODO: loading and error properties in first optional object argument
