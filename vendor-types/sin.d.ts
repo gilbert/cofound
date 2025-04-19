@@ -22,6 +22,8 @@ declare module 'sin' {
      *     live(10).get(x => x + 1) //=> 11
      */
     get<U>(f: (x: T) => U): U
+
+    observe<U>(f: (x: T, prev: T, unsub: () => void) => U, once?: boolean): () => void
     // TODO: Rest of the functions
   }
 
