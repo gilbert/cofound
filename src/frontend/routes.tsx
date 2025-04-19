@@ -30,10 +30,11 @@ type ExtendChildRoute<ParentT, ChildR> =
 type RouteKeys = keyof Route<[]>
 
 export type Route<T> = {
-  (_params: T extends [] ? {} : T): string
+  (..._params: T extends [] ? [] : [T]): string
   visit(_params: T extends [] ? {} : T, options?: RouteChangeOptions): string
   replace(_params: T extends [] ? {} : T, options?: RouteChangeOptions): string
-  isCurrent(_params: T extends [] ? {} : T): boolean
+  isCurrent(..._params: T extends [] ? [] : [T]): boolean
+  isCurrent_p(..._params: T extends [] ? [] : [T]): boolean
   src: string
   match: (url: string) => ParamsOrEmpty<T> | null
   match_p: (url: string) => ParamsOrEmpty<T> | null
@@ -123,8 +124,11 @@ function createRoute(
       replace(_params: any, options?: RouteChangeOptions) {
         s.route(_c(_params), { ...options, replace: true })
       },
-      isCurrent(_params: any) {
-        return _c(_params) === window.location.pathname
+      isCurrent(..._params: any) {
+        return _c(..._params) === window.location.pathname
+      },
+      isCurrent_p(..._params: any) {
+        return !!_match(_c(..._params), { partial: true })
       },
 
       // Private! Only used for nested route construction
