@@ -356,7 +356,9 @@ export class JobQueue {
       this.model.updateStatus(job.id, 'success')
       this.runningJobs.delete(job.id)
     } catch (details: any) {
-      result = err('unexpected', 'e500', { meta: { details: details.stack || details.toString() } })
+      result = err('unexpected', 'e500j', {
+        meta: { details: details.toString(), stack: details.stack },
+      })
     }
 
     if (result?.ok === false) {
