@@ -83,6 +83,23 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     return select.all(this.serialize(attrs)).map((row) => this.deserialize(row as any) as any)
   }
 
+  count(_attrs: Queryable<Tb['cols']>, extraSql = ''): number {
+    const attrs = { ...this.defaultWhere, ..._attrs }
+    const whereCols = Object.keys(attrs)
+      .filter((c) => (attrs as any)[c] !== undefined && c in this.table.cols)
+      .map((c) => whereCol(c, (attrs as any)[c]))
+      .join(' AND ')
+
+    // If no cols in query, don't attach WHERE clause
+    const whereSql = whereCols.length ? `WHERE ${whereCols}` : ''
+
+    const sql = `SELECT COUNT(*) as count FROM ${this.tablename} ${whereSql} ${extraSql}`
+    this.logSql(sql)
+
+    const result = this.db.prepare(sql).get(this.serialize(attrs))
+    return (result as any).count
+  }
+
   findByOptional(_attrs: Queryable<Tb['cols']>): Selectable<Tb['cols']> | null {
     const attrs = { ...this.defaultWhere, ..._attrs }
     const select = this.db.prepare(`${this._selectWhere(attrs)} LIMIT 1`)
