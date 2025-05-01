@@ -79,25 +79,68 @@ export class HttpSession<AnonSessionData, SessionData> {
   create(user_id: number) {
     const { sid, expires_at } = this.Session.create({ user_id })
 
-    // Create a properly formatted cookie options object
-    const cookieOpts: CookieOptions = {
-      httpOnly: this.cookieOptions.httpOnly,
-      path: this.cookieOptions.path,
-      sameSite: this.cookieOptions.sameSite,
+    // Calculate the options object that would normally be passed
+    let optionsForCookie: Record<string, any> = removeNullyValues({
+      ...this.cookieOptions,
       maxAge: Math.max(0, Math.floor((expires_at - Date.now()) / 1000) - 5), // 5 sec buffer
+    })
+
+    // --- FIX/WORKAROUND for faulty req.cookie serializer ---
+
+    // Part 1: Fix the secure=false issue (Critical for Safari on HTTP)
+    if (optionsForCookie.secure === false) {
+      console.log(
+        `[HttpSession.create WORKAROUND] secure:false detected for HTTP. Deleting 'secure' key from options.`,
+      )
+      delete optionsForCookie.secure
     }
 
-    // Only add secure attribute if it's true
-    if (this.cookieOptions.secure === true) {
-      cookieOpts['secure'] = true
+    // Part 2: Normalize casing of common attribute keys (Attempt to fix duplicates)
+    const normalizeKey = (
+      opts: Record<string, any>,
+      nonStandardKey: string,
+      standardKey: string,
+    ) => {
+      if (opts.hasOwnProperty(nonStandardKey)) {
+        if (!opts.hasOwnProperty(standardKey) || nonStandardKey === standardKey.toLowerCase()) {
+          if (!opts.hasOwnProperty(standardKey)) {
+            opts[standardKey] = opts[nonStandardKey]
+            console.log(
+              `[HttpSession.create WORKAROUND] Normalizing key case: Copied '${nonStandardKey}' to '${standardKey}'.`,
+            )
+          } else {
+            console.log(
+              `[HttpSession.create WORKAROUND] Normalizing key case: Standard key '${standardKey}' already exists, ignoring '${nonStandardKey}'.`,
+            )
+          }
+        }
+        if (nonStandardKey !== standardKey) {
+          console.log(
+            `[HttpSession.create WORKAROUND] Normalizing key case: Deleting non-standard key '${nonStandardKey}'.`,
+          )
+          delete opts[nonStandardKey]
+        }
+      }
     }
 
-    // Only add domain if it's specified
-    if (this.cookieOptions.domain) {
-      cookieOpts['domain'] = this.cookieOptions.domain
-    }
+    normalizeKey(optionsForCookie, 'httponly', 'HttpOnly')
+    normalizeKey(optionsForCookie, 'path', 'Path')
+    normalizeKey(optionsForCookie, 'samesite', 'SameSite')
+    normalizeKey(optionsForCookie, 'maxAge', 'Max-Age')
+    normalizeKey(optionsForCookie, 'maxage', 'Max-Age')
+    normalizeKey(optionsForCookie, 'domain', 'Domain')
+    normalizeKey(optionsForCookie, 'expires', 'Expires')
 
-    this.req.cookie(this.env.userCookieName, sid, cookieOpts)
+    // --- End FIX/WORKAROUND ---
+
+    // Log the final options being passed (for debugging)
+    console.log(
+      `[HttpSession.create] Calling req.cookie for '${this.env.userCookieName}' with final options:`,
+      JSON.stringify(optionsForCookie),
+    )
+
+    this.req.cookie(this.env.userCookieName, sid, optionsForCookie)
+
     this.clear('anon')
   }
 
@@ -118,25 +161,67 @@ export class HttpSession<AnonSessionData, SessionData> {
     const newSess = { ...(await this.getAnon()), ...attrs }
     const sealedSession = await Iron.seal(webcrypto, newSess, this.env.sessionSecret, Iron.defaults)
 
-    // Create a properly formatted cookie options object
-    const cookieOpts = {
-      httpOnly: this.cookieOptions.httpOnly,
-      path: this.cookieOptions.path,
-      sameSite: this.cookieOptions.sameSite,
-      maxAge: this.env.cookieExpirationSeconds || ONE_DAY * 30, // Cookie expiration time (in seconds)
+    // Calculate the options object that would normally be passed
+    let optionsForCookie: Record<string, any> = removeNullyValues({
+      ...this.cookieOptions,
+      maxAge: this.env.cookieExpirationSeconds || ONE_DAY * 30,
+    })
+
+    // --- FIX/WORKAROUND for faulty req.cookie serializer ---
+
+    // Part 1: Fix the secure=false issue (Critical for Safari on HTTP)
+    if (optionsForCookie.secure === false) {
+      console.log(
+        `[HttpSession.setAnon WORKAROUND] secure:false detected for HTTP. Deleting 'secure' key from options.`,
+      )
+      delete optionsForCookie.secure
     }
 
-    // Only add secure attribute if it's true
-    if (this.cookieOptions.secure === true) {
-      cookieOpts['secure'] = true
+    // Part 2: Normalize casing of common attribute keys (Attempt to fix duplicates)
+    const normalizeKey = (
+      opts: Record<string, any>,
+      nonStandardKey: string,
+      standardKey: string,
+    ) => {
+      if (opts.hasOwnProperty(nonStandardKey)) {
+        if (!opts.hasOwnProperty(standardKey) || nonStandardKey === standardKey.toLowerCase()) {
+          if (!opts.hasOwnProperty(standardKey)) {
+            opts[standardKey] = opts[nonStandardKey]
+            console.log(
+              `[HttpSession.setAnon WORKAROUND] Normalizing key case: Copied '${nonStandardKey}' to '${standardKey}'.`,
+            )
+          } else {
+            console.log(
+              `[HttpSession.setAnon WORKAROUND] Normalizing key case: Standard key '${standardKey}' already exists, ignoring '${nonStandardKey}'.`,
+            )
+          }
+        }
+        if (nonStandardKey !== standardKey) {
+          console.log(
+            `[HttpSession.setAnon WORKAROUND] Normalizing key case: Deleting non-standard key '${nonStandardKey}'.`,
+          )
+          delete opts[nonStandardKey]
+        }
+      }
     }
 
-    // Only add domain if it's specified
-    if (this.cookieOptions.domain) {
-      cookieOpts['domain'] = this.cookieOptions.domain
-    }
+    normalizeKey(optionsForCookie, 'httponly', 'HttpOnly')
+    normalizeKey(optionsForCookie, 'path', 'Path')
+    normalizeKey(optionsForCookie, 'samesite', 'SameSite')
+    normalizeKey(optionsForCookie, 'maxAge', 'Max-Age')
+    normalizeKey(optionsForCookie, 'maxage', 'Max-Age')
+    normalizeKey(optionsForCookie, 'domain', 'Domain')
+    normalizeKey(optionsForCookie, 'expires', 'Expires')
 
-    this.req.cookie(this.env.anonCookieName, sealedSession, cookieOpts)
+    // --- End FIX/WORKAROUND ---
+
+    // Log the final options being passed (for debugging)
+    console.log(
+      `[HttpSession.setAnon] Calling req.cookie for '${this.env.anonCookieName}' with final options:`,
+      JSON.stringify(optionsForCookie),
+    )
+
+    this.req.cookie(this.env.anonCookieName, sealedSession, optionsForCookie)
   }
 
   clear(type: 'user' | 'anon'): void {
