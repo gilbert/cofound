@@ -78,30 +78,26 @@ export class HttpSession<AnonSessionData, SessionData> {
 
   create(user_id: number) {
     const { sid, expires_at } = this.Session.create({ user_id })
-    
+
     // Create a properly formatted cookie options object
-    const cookieOpts = {
+    const cookieOpts: CookieOptions = {
       httpOnly: this.cookieOptions.httpOnly,
       path: this.cookieOptions.path,
       sameSite: this.cookieOptions.sameSite,
       maxAge: Math.max(0, Math.floor((expires_at - Date.now()) / 1000) - 5), // 5 sec buffer
     }
-    
+
     // Only add secure attribute if it's true
     if (this.cookieOptions.secure === true) {
-      cookieOpts['secure'] = true;
+      cookieOpts['secure'] = true
     }
-    
+
     // Only add domain if it's specified
     if (this.cookieOptions.domain) {
-      cookieOpts['domain'] = this.cookieOptions.domain;
+      cookieOpts['domain'] = this.cookieOptions.domain
     }
-    
-    this.req.cookie(
-      this.env.userCookieName,
-      sid,
-      cookieOpts
-    )
+
+    this.req.cookie(this.env.userCookieName, sid, cookieOpts)
     this.clear('anon')
   }
 
@@ -121,7 +117,7 @@ export class HttpSession<AnonSessionData, SessionData> {
   async setAnon(attrs: AnonSessionData) {
     const newSess = { ...(await this.getAnon()), ...attrs }
     const sealedSession = await Iron.seal(webcrypto, newSess, this.env.sessionSecret, Iron.defaults)
-    
+
     // Create a properly formatted cookie options object
     const cookieOpts = {
       httpOnly: this.cookieOptions.httpOnly,
@@ -129,22 +125,18 @@ export class HttpSession<AnonSessionData, SessionData> {
       sameSite: this.cookieOptions.sameSite,
       maxAge: this.env.cookieExpirationSeconds || ONE_DAY * 30, // Cookie expiration time (in seconds)
     }
-    
+
     // Only add secure attribute if it's true
     if (this.cookieOptions.secure === true) {
-      cookieOpts['secure'] = true;
+      cookieOpts['secure'] = true
     }
-    
+
     // Only add domain if it's specified
     if (this.cookieOptions.domain) {
-      cookieOpts['domain'] = this.cookieOptions.domain;
+      cookieOpts['domain'] = this.cookieOptions.domain
     }
-    
-    this.req.cookie(
-      this.env.anonCookieName,
-      sealedSession,
-      cookieOpts
-    )
+
+    this.req.cookie(this.env.anonCookieName, sealedSession, cookieOpts)
   }
 
   clear(type: 'user' | 'anon'): void {
@@ -155,21 +147,21 @@ export class HttpSession<AnonSessionData, SessionData> {
       sameSite: this.cookieOptions.sameSite,
       maxAge: 0, // Set the cookie expiration to the past
     }
-    
+
     // Only add secure attribute if it's true
     if (this.cookieOptions.secure === true) {
-      cookieOpts['secure'] = true;
+      cookieOpts['secure'] = true
     }
-    
+
     // Only add domain if it's specified
     if (this.cookieOptions.domain) {
-      cookieOpts['domain'] = this.cookieOptions.domain;
+      cookieOpts['domain'] = this.cookieOptions.domain
     }
-    
+
     this.req.cookie(
       type === 'user' ? this.env.userCookieName : this.env.anonCookieName,
       '',
-      cookieOpts
+      cookieOpts,
     )
   }
 }
