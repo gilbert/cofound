@@ -226,7 +226,7 @@ export class HttpSession<AnonSessionData, SessionData> {
 
   clear(type: 'user' | 'anon'): void {
     // Create a properly formatted cookie options object
-    const cookieOpts = {
+    const cookieOpts: Record<any, any> = {
       httpOnly: this.cookieOptions.httpOnly,
       path: this.cookieOptions.path,
       sameSite: this.cookieOptions.sameSite,
