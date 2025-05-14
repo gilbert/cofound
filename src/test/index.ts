@@ -11,7 +11,6 @@ export function makeRandom(seed: number) {
 }
 
 export const seed = +process.env.TEST_SEED! || Math.floor(Math.random() * 800) + 120
-console.log('Using seed', seed)
 
 export const seededRandom = makeRandom(seed)
 export const seededRandomInt = (min: number, max: number) =>
