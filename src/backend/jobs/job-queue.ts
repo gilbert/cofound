@@ -55,7 +55,7 @@ class JobModel extends CF_BaseModel<typeof jobQueueSchema.queue_jobs, BaseDbConn
       {},
       `
         WHERE status IN ('queued', 'interrupted')
-           OR (status = 'processing' AND last_heartbeat_at < (unixepoch('subsec') - 5))
+           OR (status = 'running' AND last_heartbeat_at < (unixepoch('subsec') - 5))
           AND run_at <= unixepoch('subsec')
         ORDER BY created_at ASC
         LIMIT ${this.CHUNK_SIZE}
