@@ -92,6 +92,9 @@ export type JobFailMeta = {
 export abstract class CF_BaseJob<Models> extends CF_BaseAction<Models> {
   delay = 0
   retryLimit = 3
+  getConcurrency(params: any, meta: JobRunMeta) {
+    return { queue: 'default', limit: Number.MAX_SAFE_INTEGER }
+  }
   backoffStrategy: JobBackoffStrategy = this.jobQueue.backoffStrategies.exponential()
 
   abstract run(params: any, meta: JobRunMeta): Promise<OkResult | ErrResult>
@@ -112,7 +115,7 @@ export class JobQueue {
   private env: JobQueueEnv
   private model: JobModel
   private jobClasses: Record<string, typeof CF_BaseJob>
-  private runAsync: ReturnType<typeof pLimit>
+  private limiters = new Map<string, { limit: number; run: ReturnType<typeof pLimit> }>()
   private runningJobs = new Set<JobRecord['id']>()
   private shuttingDown: boolean = false
   private emptyQueueResolvers: (() => void)[] = []
@@ -159,7 +162,6 @@ export class JobQueue {
   }) {
     this.env = params.env
     this.model = new JobModel(params.db)
-    this.runAsync = pLimit(params.concurrency || 8)
     this.jobClasses = {}
     this.jobDirectory = params.jobDirectory
     this.get = params.get
@@ -290,15 +292,57 @@ export class JobQueue {
     this.markRunningJobsAsInterrupted()
   }
 
+  //
+  // [ASSUMPTION]: Number of total queued jobs will be ~1million or fewer.
+  //
   private enqueue(job: JobRecord) {
     if (this.runningJobs.has(job.id) || this.shuttingDown) return Promise.resolve()
     this.runningJobs.add(job.id)
-    return this.runAsync(
+
+    const instance = this.getJobClassInstance(job)
+    if (!instance) return
+
+    const jobArgs = JSON.parse(job.args)
+    const jobMeta: JobRunMeta = { job_id: job.id, currentRetry: job.retries || 0 }
+
+    const { queue, limit } = instance.getConcurrency(jobArgs, jobMeta)
+
+    let limiter = this.limiters.get(queue)
+    if (!limiter || limiter.limit !== limit) {
+      //
+      // [ASSUMPTION]: Limits will not change frequently.
+      // Important because changing a limit will technically increase total concurrency temporarily.
+      //
+      !limiter && this._log(`Creating new limiter for key '${queue}' with concurrency ${limit}`)
+      limiter &&
+        this._log(`Concurrency changed for key '${queue}' from ${limiter.limit} to ${limit}`)
+
+      limiter = { limit, run: pLimit(limit) }
+      this.limiters.set(queue, limiter)
+    }
+
+    this.runningJobs.add(job.id)
+
+    if (job.queue !== queue) {
+      // For debugging, mostly
+      this.model.update(job.id, { queue })
+    }
+
+    //
+    // Schedule the job using the **queue-specific** limiter
+    //
+    return limiter.run(
       () =>
         new Promise<void>((resolve) =>
-          // Reduce event loop priority to other tasks (e.g. the web server)
-          // https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick#setimmediate-vs-settimeout
           setTimeout(() => {
+            // IMPORTANT: Check for shutdown *again* right before processing,
+            // as the job may have been waiting in the p-limit queue for a long time.
+            if (this.shuttingDown) {
+              this.runningJobs.delete(job.id) // It never truly ran, so just delete it from the set.
+              // Do NOT mark as interrupted, as it never started running. It's still 'queued'.
+              resolve()
+              return
+            }
             this.processJob(job).finally(resolve)
           }, 0),
         ),
@@ -327,15 +371,8 @@ export class JobQueue {
     if (this.shuttingDown) return
 
     // [ASSUMPTION]: Path to this method can only be reached if start has been called
-    const jobClasses = this.jobClasses!
-
-    const [jobClassName, method] = job.type.split('.')
-    const JobClass = jobClassName && jobClasses[jobClassName]
-    if (!jobClassName || !JobClass || method !== 'run' || !(method in JobClass.prototype)) {
-      this.log(`Invalid job type: ${job.type}`)
-      this.model.fail(job.id, `Invalid job type: ${job.type}`)
-      return
-    }
+    const instance = this.getJobClassInstance(job)
+    if (!instance) return
 
     this.model.updateStatus(job.id, 'running')
 
@@ -345,11 +382,10 @@ export class JobQueue {
     }, 4900)
 
     // [ASSUMPTION]: Path to this method can only be reached if start has been called
-    const instance = this.get(JobClass)
     var result: Result
     try {
       this.log(`Running job ${job.id}: ${job.type}`, job.args)
-      result = await (instance as any)[method](JSON.parse(job.args), {
+      result = await instance.run(JSON.parse(job.args), {
         job_id: job.id,
         currentRetry: job.retries || 0,
       })
@@ -362,7 +398,7 @@ export class JobQueue {
     }
 
     if (result?.ok === false) {
-      this.log(`Job ${job.id} failed:`, JobClass.name, job.args, result)
+      this.log(`Job ${job.id} failed:`, job.type, job.args, result)
       const options = this.getJobOptions(instance)
       const retries = (job.retries || 0) + 1
       const errorDetails = JSON.stringify(result)
@@ -404,6 +440,17 @@ export class JobQueue {
     for (const jobId of this.runningJobs) {
       this.model.markInterrupted(jobId)
     }
+  }
+
+  private getJobClassInstance(job: JobRecord): CF_BaseJob<any> | null {
+    const [jobClassName] = job.type.split('.')
+    const JobClass = this.jobClasses[jobClassName!]
+    if (!JobClass || !('run' in JobClass.prototype)) {
+      this.log(`Invalid job type: ${job.type}`)
+      this.model.fail(job.id, `Invalid job type: ${job.type}`)
+      return null
+    }
+    return this.get(JobClass) as any
   }
 
   private getJobOptions(jobClass: CF_BaseJob<any>): Required<JobOptions> {

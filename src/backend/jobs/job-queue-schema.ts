@@ -6,6 +6,7 @@ export const jobQueueSchema = {
   queue_jobs: {
     cols: {
       id: col.primary(),
+      queue: col.text().nullable(),
       type: col.text(),
       run_at: col.timestamp(),
       status: col.enum(jobStatus),
