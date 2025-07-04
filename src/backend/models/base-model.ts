@@ -100,6 +100,24 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     return (result as any).count
   }
 
+  exists(_attrs: Queryable<Tb['cols']>, extraSql = ''): boolean {
+    const attrs = { ...this.defaultWhere, ..._attrs }
+    const whereCols = Object.keys(attrs)
+      .filter((c) => (attrs as any)[c] !== undefined && c in this.table.cols)
+      .map((c) => whereCol(c, (attrs as any)[c]))
+      .join(' AND ')
+
+    // If no cols in query, don't attach WHERE clause
+    const whereSql = whereCols.length ? `WHERE ${whereCols}` : ''
+
+    // Use SELECT 1 LIMIT 1 for efficient existence check
+    const sql = `SELECT 1 FROM ${this.tablename} ${whereSql} ${extraSql} LIMIT 1`
+    this.logSql(sql)
+
+    const result = this.db.prepare(sql).get(this.serialize(attrs))
+    return result !== undefined && result !== null
+  }
+
   findByOptional(_attrs: Queryable<Tb['cols']>): Selectable<Tb['cols']> | null {
     const attrs = { ...this.defaultWhere, ..._attrs }
     const select = this.db.prepare(`${this._selectWhere(attrs)} LIMIT 1`)
