@@ -5,6 +5,7 @@ Your app has access to a jobQueue for async, delayed, and/or must-complete tasks
 ## Example Job
 
 ```ts
+// Note this file MUST be named ./+/jobs/SubmitDeploymentJob.ts
 import { BaseJob, JobRunMeta } from './base-job'
 
 type Params = {
@@ -17,7 +18,7 @@ export class SubmitDeploymentJob extends BaseJob {
   // Optional
   backoffStrategy = this.jobQueue.BackoffStrategies.linear()
 
-  async run({ deployment_id }: Params, ) {
+  async run({ deployment_id }: Params) {
     if (some_bad_condition) {
       // Returning an error will cause this job to retry later
       return err('bad', 'e123')
@@ -30,6 +31,16 @@ export class SubmitDeploymentJob extends BaseJob {
 
     // Returning ok completes the job
     return ok({})
+  }
+
+  // Optional
+  onFinalFailure({ deployment_id }: Params, meta: JobFailMeta): void {
+    // meta : {
+    //   job_id: number;
+    //   aborted: boolean;
+    //   errorResult: ErrResult;
+    //   currentRetry: number;
+    // }
   }
 }
 ```

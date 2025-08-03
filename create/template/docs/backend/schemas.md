@@ -142,7 +142,7 @@ const schema = {
       // If your table name does not follow this convention,
       // you can simply be explicit like so.
       //
-      org_id: col.integer().references('orgs'),
+      author_id: col.integer().references('users.id'),
     },
   },
 }
