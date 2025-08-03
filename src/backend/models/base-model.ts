@@ -206,7 +206,7 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     return (row as any).id as number
   }
 
-  protected updateWhere(where: Partial<Selectable<Tb['cols']>>, set: Updateable<Tb['cols']>) {
+  protected updateWhere(where: Queryable<Tb['cols']>, set: Updateable<Tb['cols']>) {
     this._update(where, set)
   }
 
@@ -215,7 +215,7 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     this._update({ id }, set)
   }
 
-  private _update(_where: Partial<Selectable<Tb['cols']>>, set: Updateable<Tb['cols']>) {
+  private _update(_where: Queryable<Tb['cols']>, set: Updateable<Tb['cols']>) {
     const where = { ...this.defaultWhere, ..._where }
     const whereCols = Object.keys(where)
       .filter((c) => (where as any)[c] !== undefined && c in this.table.cols)
@@ -238,11 +238,11 @@ export abstract class CF_BaseModel<Tb extends TableDef, DbConn extends BaseDbCon
     update.run({ ...whereValues, ...setValues })
   }
 
-  protected deleteWhere(where: Partial<Selectable<Tb['cols']>>) {
+  protected deleteWhere(where: Queryable<Tb['cols']>) {
     this._delete(where)
   }
 
-  private _delete(_where: Partial<Selectable<Tb['cols']>>) {
+  private _delete(_where: Queryable<Tb['cols']>) {
     const where = { ...this.defaultWhere, ..._where }
     const whereCols = Object.keys(where)
       .filter((c) => (where as any)[c] !== undefined && c in this.table.cols)
