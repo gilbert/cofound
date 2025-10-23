@@ -155,6 +155,15 @@ const schema = {
 // Very useful for defining a new column that you want to be non-nullable.
 col.text().sourceDataFrom(`'foo-' || id`)
 
+// Replaces NULL values with a SQLite value during migration.
+// Very useful for converting an existing nullable column to non-nullable.
+col.text().replaceNullWith(`'default'`)
+
+// You can combine both helpers for more complex scenarios:
+// This creates a new column that sources from 'nickname',
+// but uses 'email' as fallback when nickname is null
+col.text().sourceDataFrom('nickname').replaceNullWith('email')
+
 // Defines automatic transformations when INSERTing or SELECTing values.
 // Use this sparingly, and only for well-defined data shapes that won't change over time.
 // Otherwise, the complexity should live in your model file.

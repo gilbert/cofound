@@ -379,4 +379,119 @@ o.spec('Database Migrations', () => {
     o(migrateAppDatabase({ db, env, schema: schemaAfter })).equals(false)
     expectCount(1, `SELECT * FROM sqlite_master WHERE type = 'index' AND name = 'foo'`)
   })
+
+  o('replaceNullWith() converts nullable to non-nullable column', () => {
+    const schemaBefore = {
+      users: {
+        cols: {
+          id: col.primary(),
+          name: col.text().nullable(),
+        },
+      },
+    } satisfies SchemaDef
+    const schemaAfter = {
+      users: {
+        cols: {
+          id: col.primary(),
+          name: col.text().replaceNullWith(`'unknown'`),
+        },
+      },
+    } satisfies SchemaDef
+    migrateAppDatabase({ db, env, schema: schemaBefore })
+    run(`INSERT INTO users (id, name) VALUES (1, 'alice')`)
+    run(`INSERT INTO users (id, name) VALUES (2, NULL)`)
+    run(`INSERT INTO users (id) VALUES (3)`)
+    expectCount(2, `SELECT * FROM users WHERE name IS NULL`)
+
+    migrateAppDatabase({ db, env, schema: schemaAfter })
+    expectCount(1, `SELECT * FROM users WHERE name = 'alice'`)
+    expectCount(2, `SELECT * FROM users WHERE name = 'unknown'`)
+    expectCount(0, `SELECT * FROM users WHERE name IS NULL`)
+    o(() => run(`INSERT INTO users (id) VALUES (4)`)).throws(Error)
+  })
+
+  o('replaceNullWith() on new column with hardcoded value', () => {
+    const schemaBefore = {
+      users: {
+        cols: {
+          id: col.primary(),
+          email: col.text(),
+        },
+      },
+    } satisfies SchemaDef
+    const schemaAfter = {
+      users: {
+        cols: {
+          id: col.primary(),
+          email: col.text(),
+          status: col.text().replaceNullWith(`'active'`),
+        },
+      },
+    } satisfies SchemaDef
+    migrateAppDatabase({ db, env, schema: schemaBefore })
+    run(`INSERT INTO users (email) VALUES ('alice@example.com')`)
+
+    migrateAppDatabase({ db, env, schema: schemaAfter })
+    expectCount(1, `SELECT * FROM users WHERE status = 'active'`)
+    o(() => run(`INSERT INTO users (email) VALUES ('bob@example.com')`)).throws(Error)
+    run(`INSERT INTO users (email, status) VALUES ('carly@example.com', 'inactive')`)
+  })
+
+  o('sourceDataFrom() + replaceNullWith() combination', () => {
+    const schemaBefore = {
+      users: {
+        cols: {
+          id: col.primary(),
+          email: col.text(),
+          nickname: col.text().nullable(),
+        },
+      },
+    } satisfies SchemaDef
+    const schemaAfter = {
+      users: {
+        cols: {
+          id: col.primary(),
+          email: col.text(),
+          nickname: col.text().nullable(),
+          display_name: col.text().sourceDataFrom('nickname').replaceNullWith('email'),
+        },
+      },
+    } satisfies SchemaDef
+    migrateAppDatabase({ db, env, schema: schemaBefore })
+    run(`INSERT INTO users (email, nickname) VALUES ('alice@example.com', 'ally')`)
+    run(`INSERT INTO users (email, nickname) VALUES ('bob@example.com', NULL)`)
+    run(`INSERT INTO users (email) VALUES ('carly@example.com')`)
+
+    migrateAppDatabase({ db, env, schema: schemaAfter })
+    expectCount(1, `SELECT * FROM users WHERE display_name = 'ally'`)
+    expectCount(1, `SELECT * FROM users WHERE display_name = 'bob@example.com'`)
+    expectCount(1, `SELECT * FROM users WHERE display_name = 'carly@example.com'`)
+  })
+
+  o('replaceNullWith() with nullable source column preserves existing values', () => {
+    const schemaBefore = {
+      users: {
+        cols: {
+          id: col.primary(),
+          status: col.text().nullable(),
+        },
+      },
+    } satisfies SchemaDef
+    const schemaAfter = {
+      users: {
+        cols: {
+          id: col.primary(),
+          status: col.text().replaceNullWith(`'pending'`),
+        },
+      },
+    } satisfies SchemaDef
+    migrateAppDatabase({ db, env, schema: schemaBefore })
+    run(`INSERT INTO users (id, status) VALUES (1, 'active')`)
+    run(`INSERT INTO users (id, status) VALUES (2, NULL)`)
+
+    migrateAppDatabase({ db, env, schema: schemaAfter })
+    expectCount(1, `SELECT * FROM users WHERE status = 'active'`)
+    expectCount(1, `SELECT * FROM users WHERE status = 'pending'`)
+    expectCount(0, `SELECT * FROM users WHERE status IS NULL`)
+  })
 })

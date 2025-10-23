@@ -243,14 +243,31 @@ export function migrateAppDatabase({ db, env, schema, targetVersion }: Options):
         (c) =>
           // Copy over existing columns and new columns with a data source
           actualColumns.get(name)!.find((col) => col.name === c) ||
-          tableSchema[c]!.meta.sourceDataFrom,
+          tableSchema[c]!.meta.sourceDataFrom ||
+          tableSchema[c]!.meta.replaceNullWith,
       )
       .map((c) => {
-        // If column is new, use its source if present
-        const source =
-          (!actualColumns.get(name)!.find((col) => col.name === c) &&
-            tableSchema[c]!.meta.sourceDataFrom) ||
-          `[${c}]`
+        const colExists = actualColumns.get(name)!.find((col) => col.name === c)
+        const sourceDef = tableSchema[c]!.meta.sourceDataFrom
+        const replaceDef = tableSchema[c]!.meta.replaceNullWith
+
+        // Determine the source for this column
+        const source = (() => {
+          if (!colExists && sourceDef && replaceDef) {
+            return `COALESCE(${sourceDef}, ${replaceDef})`
+          }
+          if (!colExists && sourceDef) {
+            return sourceDef
+          }
+          if (!colExists && replaceDef) {
+            return replaceDef
+          }
+          if (colExists && replaceDef) {
+            return `COALESCE([${c}], ${replaceDef})`
+          }
+          return `[${c}]`
+        })()
+
         return [`[${c}]`, source]
       })
       .concat([

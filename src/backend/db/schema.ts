@@ -65,6 +65,7 @@ export class Column<SelectType, InsertType = SelectType, UpdateType = SelectType
     references: undefined as string | undefined,
     enums: undefined as readonly string[] | undefined,
     sourceDataFrom: undefined as string | undefined,
+    replaceNullWith: undefined as string | undefined,
     transform: {} as {
       serialize?: (original: any) => SelectType
       deserialize?: (dbValue: SelectType) => any
@@ -134,6 +135,17 @@ export class Column<SelectType, InsertType = SelectType, UpdateType = SelectType
    * */
   sourceDataFrom(sql: string): Column<SelectType, InsertType, UpdateType> {
     return this.set('sourceDataFrom', sql) as any
+  }
+
+  /**
+   * Useful for:
+   * - Converting an existing nullable column to non-nullable
+   * - Providing a fallback value when sourceDataFrom references a nullable column
+   *
+   * When combined with sourceDataFrom(), generates COALESCE(sourceDataFrom_value, replaceNullWith_value)
+   * */
+  replaceNullWith(sql: string): Column<SelectType, InsertType, UpdateType> {
+    return this.set('replaceNullWith', sql) as any
   }
 
   /** Marks as deprecated, keeping in schema but throwing type errors on usage */
