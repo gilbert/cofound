@@ -104,6 +104,25 @@ const SettingsPages = cc(function () {
 })
 ```
 
+### Changing Routes
+
+To change the route to /foo/bar:
+
+```ts
+s.route('/foo/bar')
+```
+
+Additional options (optional second parameter):
+
+```ts
+s.route('/foo/bar', {
+  state: { /* custom state object */ },
+  replace: false,  // true to use replaceState instead of pushState
+  redraw: true,    // false to skip redrawing
+  scroll: true     // false to prevent scroll restoration
+})
+```
+
 ## addEventListener
 
 Within a cc component closure, you can call `this.addEventListener` to listen to a DOM event, which will automatically cleanup when the component dismounts.
@@ -121,6 +140,172 @@ export const Modal = cc<Attrs>(function(attrs) {
 ## Timeouts
 
 Within a cc component closure, you can call `this.setTimeout` and `this.setInterval` to do their respective global equivalents. This automatically cleans up timeout ids when the component unmounts.
+
+## Reactivity and Common Pitfalls
+
+### Component Closure vs View Function
+
+One of the most important concepts to understand in Sin/Mithril-style components is the distinction between the **component closure** and the **view function**:
+
+- **Component closure**: Runs **once** when the component initializes
+- **View function**: Runs on **every render**
+
+This has critical implications for reactive values:
+
+```ts
+// ❌ WRONG: Computed value in component closure
+export const MyComponent = cc<{ items: Item[] }>(function(attrs) {
+  const hasItems = attrs.items.length > 0  // This only runs ONCE!
+
+  return () => {
+    // Even if attrs.items changes, hasItems will never update
+    return <div>{hasItems ? 'Has items' : 'No items'}</div>
+  }
+})
+
+// ✅ CORRECT: Computed value in view function
+export const MyComponent = cc<{ items: Item[] }>(function(attrs) {
+  return () => {
+    const hasItems = attrs.items.length > 0  // This runs on EVERY render
+
+    return <div>{hasItems ? 'Has items' : 'No items'}</div>
+  }
+})
+```
+
+### Real-World Example: Conditional Rendering
+
+This issue commonly appears when conditionally rendering UI based on reactive state:
+
+```ts
+// ❌ WRONG: isActive computed in closure
+export const ScannerComponent = cc(function() {
+  let currentScan: Scan | null = null
+
+  // This only evaluates once when component initializes!
+  const isActive = currentScan && currentScan.status === 'running'
+
+  return () => {
+    // isActive will always be false, even after currentScan changes
+    return (
+      <div>
+        {!isActive && <button onclick={startScan}>Start Scan</button>}
+        {isActive && <div>Scan in progress...</div>}
+      </div>
+    )
+  }
+})
+
+// ✅ CORRECT: isActive computed in view function
+export const ScannerComponent = cc(function() {
+  let currentScan: Scan | null = null
+
+  return () => {
+    // Evaluated on every render, so it reacts to currentScan changes
+    const isActive = currentScan && currentScan.status === 'running'
+
+    return (
+      <div>
+        {!isActive && <button onclick={startScan}>Start Scan</button>}
+        {isActive && <div>Scan in progress...</div>}
+      </div>
+    )
+  }
+})
+```
+
+### Rule of Thumb
+
+If a value depends on reactive state (component state, attrs, or any value that changes over time), it must be computed inside the view function, not in the component closure.
+
+## DOM Lifecycle Management with `dom=`
+
+The `dom=` attribute is Sin's approach to DOM lifecycle management, replacing:
+- React's `ref` prop
+- Mithril's `oncreate`, `onupdate`, `onremove` hooks
+
+### Basic Usage
+
+The `dom=` attribute accepts a callback that receives the DOM element when it's mounted:
+
+```ts
+export const MyComponent = cc(function() {
+  return () => {
+    return (
+      <div
+        dom={(element) => {
+          if (element) {
+            // Element is mounted - do initialization here
+            console.log('Element mounted:', element)
+
+            // Optionally return a cleanup function
+            return () => {
+              console.log('Element unmounted:', element)
+              // Do cleanup here
+            }
+          }
+        }}
+      >
+        Content
+      </div>
+    )
+  }
+})
+```
+
+### Key Features
+
+1. **Mount callback**: The callback runs when the element is added to the DOM
+2. **Cleanup function**: Return a function from the callback to run cleanup when the element is removed
+3. **Element access**: You get direct access to the actual DOM node
+
+### Real-World Example
+
+Here's a practical example from `FancyHomeBg.tsx` that renders a Three.js scene:
+
+```ts
+export const FancyHomeBg = cc(function() {
+  return () => {
+    return (
+      <div
+        class="Scene fixed inset-0 flex justify-center items-center z-[-1]"
+        dom={(div) => {
+          if (div) {
+            // Initialize Three.js scene in the mounted element
+            const controller = renderModelInContainer(div as HTMLDivElement)
+
+            // Set initial state
+            controller.move(0, 0, 1)
+
+            // Store reference for external access
+            globalModelController = controller
+
+            // Return cleanup function
+            return () => {
+              controller.cleanup()
+            }
+          }
+        }}
+      ></div>
+    )
+  }
+})
+```
+
+### Common Use Cases
+
+- Integrating third-party libraries (Three.js, D3.js, etc.)
+- Accessing DOM measurements (offsetWidth, scrollHeight, etc.)
+- Setting up event listeners directly on the element
+- Imperatively manipulating the DOM when declarative JSX isn't sufficient
+- Initializing web components or custom elements
+
+### Important Notes
+
+- Always check if `element` is truthy before using it
+- The cleanup function is optional but recommended when you need to tear down resources
+- The callback only runs on mount, not on every update (unlike Mithril's `onupdate`)
+- For event listeners, prefer using `this.addEventListener` in the component closure when possible
 
 ## Architecture Guidelines
 
