@@ -1,0 +1,71 @@
+{
+  "name": "cos",
+  "version": "1.0.0-rc.1",
+  "description": "cos",
+  "type": "module",
+  "types": "cos.d.ts",
+  "main": "src/index.js",
+  "scripts": {
+    "postinstall": "node shared/server/uws.js",
+    "start": "node ./bin/index start",
+    "test": "node ./tests/ssr.js && node ./tests/db.js",
+    "test:ssr": "node ./tests/ssr.js",
+    "test:db": "node ./tests/db.js",
+    "lint": "eslint . --ignore-pattern dist.js",
+    "build:min": "esbuild src/index.js --minify --format=esm --bundle --outfile=cos.min.js",
+    "build:bundle": "esbuild src/index.js --format=esm --bundle --outfile=cos.js",
+    "build:gzip": "gzip -c cos.min.js > cos.min.js.gz && ls -l cos.min.js.gz && rm cos.min.js.gz",
+    "build:dev": "esbuild bin/develop/tools/index.js --external:fsevents --external:/node_modules/cos/* --alias:COS=./src/index.js --minify --format=esm --bundle --outfile=bin/develop/tools/dist.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./cos.d.ts",
+      "node": "./ssr/cos.js",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./bin/color": "./bin/color.js",
+    "./env": "./bin/env.js",
+    "./exit": "./bin/exit.js",
+    "./build": "./shared/build/index.js",
+    "./server": "./shared/server/index.js",
+    "./server/window": "./ssr/window.js",
+    "./ssr": "./ssr/index.js",
+    "./test": "./bin/test/test.js",
+    "./mimes": "./shared/server/mimes.js",
+    "./db": "./db/index.js",
+    "./db/test-utils": "./db/test-utils.js",
+    "./server/test-utils": "./shared/server/test-utils.js"
+  },
+  "bin": {
+    "cos": "./bin/index.js"
+  },
+  "files": [
+    "/bin",
+    "/db",
+    "/shared",
+    "/src",
+    "/ssr"
+  ],
+  "author": "",
+  "keywords": [
+    "view",
+    "framework",
+    "cos.js",
+    "cos",
+    "simple",
+    "css",
+    "html",
+    "javascript",
+    "not-react",
+    "not-vue"
+  ],
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "debug": "^4.3.4",
+    "esbuild": "0.24.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
