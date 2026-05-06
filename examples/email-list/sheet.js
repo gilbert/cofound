@@ -4,15 +4,19 @@ import s from 'cos'
 let schema = null
 let rows = []
 let editing = null // { rowIdx, colIdx, value }
-let active = null  // { rowIdx, colIdx }
+let active = null  // { rowIdx, colIdx } — anchor of selection
+let cursor = null  // { rowIdx, colIdx } — moving end (equals active when no shift)
 let selected = new Set() // "rowIdx,colIdx" strings
+let copied = null // { cells: Set, bounds: {minRow,maxRow,minCol,maxCol} } or null
+let copyOverlayPos = null // { top, left, width, height } in px
 let loaded = false
 
 function cellKey(r, c) { return r + ',' + c }
 
 function selectCell(rowIdx, colIdx, shiftKey) {
   if (shiftKey && active) {
-    // Rectangular range from active to target
+    // Extend: keep active (anchor), move cursor
+    cursor = { rowIdx, colIdx }
     const r0 = Math.min(active.rowIdx, rowIdx)
     const r1 = Math.max(active.rowIdx, rowIdx)
     const c0 = Math.min(active.colIdx, colIdx)
@@ -23,6 +27,7 @@ function selectCell(rowIdx, colIdx, shiftKey) {
         selected.add(cellKey(r, c))
   } else {
     active = { rowIdx, colIdx }
+    cursor = { rowIdx, colIdx }
     selected = new Set([cellKey(rowIdx, colIdx)])
   }
   // Cancel editing if we move away
@@ -69,6 +74,7 @@ export default function Sheet(api, table) {
 
   function selectColumn(colIdx) {
     active = { rowIdx: 0, colIdx }
+    cursor = { rowIdx: 0, colIdx }
     selected = new Set()
     for (let r = 0; r < rows.length; r++)
       selected.add(cellKey(r, colIdx))
@@ -77,6 +83,7 @@ export default function Sheet(api, table) {
 
   function selectRow(rowIdx) {
     active = { rowIdx, colIdx: 0 }
+    cursor = { rowIdx, colIdx: 0 }
     selected = new Set()
     for (let c = 0; c < visibleCols.length; c++)
       selected.add(cellKey(rowIdx, c))
@@ -174,6 +181,25 @@ export default function Sheet(api, table) {
       lines.push(cells.join('\t'))
     }
     navigator.clipboard.writeText(lines.join('\n'))
+    // Measure cell positions for overlay (cells already in DOM, borders unchanged)
+    const sheet = document.getElementById('sheet')
+    const trs = sheet.querySelectorAll('tbody tr')
+    // children[0] is row number td, data columns start at [1]
+    const firstCell = trs[bounds.minRow]?.children[bounds.minCol + 1]
+    const lastCell = trs[bounds.maxRow]?.children[bounds.maxCol + 1]
+    if (firstCell && lastCell) {
+      const sheetRect = sheet.getBoundingClientRect()
+      const firstRect = firstCell.getBoundingClientRect()
+      const lastRect = lastCell.getBoundingClientRect()
+      copyOverlayPos = {
+        top: firstRect.top - sheetRect.top,
+        left: firstRect.left - sheetRect.left,
+        width: lastRect.right - firstRect.left,
+        height: lastRect.bottom - firstRect.top
+      }
+    }
+    copied = { cells: new Set(selected), bounds }
+    s.redraw()
   }
 
   function onkeydown(e) {
@@ -202,21 +228,32 @@ export default function Sheet(api, table) {
       return
     }
 
+    // Escape: clear copied outline and selection
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      copied = null
+      copyOverlayPos = null
+      selected = new Set([cellKey(rowIdx, colIdx)])
+      s.redraw()
+      return
+    }
+
     // Copy
     if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
       copySelection(e)
       return
     }
 
-    // Navigation
-    let newRow = rowIdx, newCol = colIdx, handled = false
-    if (e.key === 'ArrowUp' && rowIdx > 0) { newRow--; handled = true }
-    else if (e.key === 'ArrowDown' && rowIdx < maxRow) { newRow++; handled = true }
-    else if (e.key === 'ArrowLeft' && colIdx > 0) { newCol--; handled = true }
-    else if (e.key === 'ArrowRight' && colIdx < maxCol) { newCol++; handled = true }
+    // Navigation — shift extends from cursor (moving end), otherwise from active
+    const from = e.shiftKey ? (cursor || active) : active
+    let newRow = from.rowIdx, newCol = from.colIdx, handled = false
+    if (e.key === 'ArrowUp' && from.rowIdx > 0) { newRow--; handled = true }
+    else if (e.key === 'ArrowDown' && from.rowIdx < maxRow) { newRow++; handled = true }
+    else if (e.key === 'ArrowLeft' && from.colIdx > 0) { newCol--; handled = true }
+    else if (e.key === 'ArrowRight' && from.colIdx < maxCol) { newCol++; handled = true }
     else if (e.key === 'Tab') {
       e.preventDefault()
-      const next = e.shiftKey ? colIdx - 1 : colIdx + 1
+      const next = e.shiftKey ? from.colIdx - 1 : from.colIdx + 1
       if (next >= 0 && next <= maxCol) { newCol = next; handled = true }
     }
     else if (e.key === 'Enter') {
@@ -252,7 +289,7 @@ export default function Sheet(api, table) {
 
     if (handled) {
       e.preventDefault()
-      selectCell(newRow, newCol, false)
+      selectCell(newRow, newCol, e.shiftKey)
       s.redraw()
     }
   }
@@ -366,7 +403,17 @@ export default function Sheet(api, table) {
 
   function onRowNumberClick(e, rowIdx) {
     e.redraw = false
-    selectRow(rowIdx)
+    if (e.shiftKey && active) {
+      const r0 = Math.min(active.rowIdx, rowIdx)
+      const r1 = Math.max(active.rowIdx, rowIdx)
+      selected = new Set()
+      for (let r = r0; r <= r1; r++)
+        for (let c = 0; c < visibleCols.length; c++)
+          selected.add(cellKey(r, c))
+      editing = null
+    } else {
+      selectRow(rowIdx)
+    }
     s.redraw.force().then(focusWrapper)
   }
 
@@ -374,6 +421,7 @@ export default function Sheet(api, table) {
     w 100%
     font-size 14px
     outline none
+    position relative
   `({ id: 'sheet', tabindex: 0, onkeydown },
     s`table
       w 100%
@@ -442,15 +490,17 @@ export default function Sheet(api, table) {
             visibleCols.map((col, colIdx) => {
               const isActive = active && active.rowIdx === rowIdx && active.colIdx === colIdx
               const isSel = selected.has(cellKey(rowIdx, colIdx))
-              const shadow = isActive
-                ? 'inset 0 0 0 2px #2563eb'
-                : isSel
-                  ? 'inset 0 0 0 2px #93c5fd'
-                  : 'none'
+
+              // Active cell: solid blue box-shadow
+              const shadow = isActive ? 'inset 0 0 0 2px #2563eb' : 'none'
+              // Non-active selected: subtle background
+              const bg = (!isActive && isSel) ? '#eef3ff' : 'transparent'
+
               return s`td
                 p 6px 12px
                 border 1px solid #e5e7eb
                 box-shadow ${shadow}
+                bc ${bg}
                 cursor default
                 overflow hidden
                 user-select none
@@ -489,6 +539,17 @@ export default function Sheet(api, table) {
         )
       )
     ),
+    // Copy overlay — positioned absolutely, no layout impact
+    (copied && copyOverlayPos) && s`div
+      position absolute
+      border 2px dashed #2563eb
+      pointer-events none
+      box-sizing border-box
+      top ${copyOverlayPos.top + 'px'}
+      left ${copyOverlayPos.left + 'px'}
+      w ${copyOverlayPos.width + 'px'}
+      height ${copyOverlayPos.height + 'px'}
+    `(),
     // Add row button
     s`button
       mt 12px
