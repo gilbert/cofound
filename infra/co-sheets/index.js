@@ -132,9 +132,11 @@ export default function Sheet(api, table) {
     const attrs = {}
     for (const c of st.schema.editable) {
       const col = st.schema.cols[c]
+      if (col.type === 'unixepoch') continue
+      if (col.references) continue // FK: let DB default (NULL for nullable)
       if (col.type === 'boolean') attrs[c] = false
-      else if (col.type === 'integer' && !col.references) attrs[c] = 0
-      else if (col.type === 'unixepoch') continue // skip timestamps
+      else if (col.type === 'enum' && col.options && col.options.length > 0) attrs[c] = col.options[0]
+      else if (col.type === 'integer') attrs[c] = 0
       else attrs[c] = ''
     }
     const row = await s.http.post(base, { body: attrs })
@@ -364,7 +366,8 @@ export default function Sheet(api, table) {
       const options = st.lookups[col] || []
       return s`select
         w 100%
-        p 4px
+        height 28px
+        p 0 4px
         border 1px solid transparent
         border-radius 3px
         font-size 14px
@@ -424,7 +427,8 @@ export default function Sheet(api, table) {
     if (type === 'enum' && colInfo.options && isEditable) {
       return s`select
         w 100%
-        p 4px
+        height 28px
+        p 0 4px
         border 1px solid transparent
         border-radius 3px
         font-size 14px
@@ -510,6 +514,12 @@ export default function Sheet(api, table) {
   function onCellClick(e, rowIdx, colIdx) {
     e.redraw = false
     selectCell(st, rowIdx, colIdx, e.shiftKey)
+    // Don't steal focus from selects/checkboxes — force redraw would recreate the element
+    const tag = e.target.tagName
+    if (tag === 'SELECT' || tag === 'OPTION' || tag === 'INPUT') {
+      s.redraw()
+      return
+    }
     s.redraw.force().then(focusWrapper)
   }
 
@@ -597,7 +607,8 @@ export default function Sheet(api, table) {
           const rowSel = isRowFullySelected(rowIdx)
           return s`tr`({ key: row.id },
             s`td
-              p 6px 4px
+              p 0 4px
+              height 36px
               border 1px solid #e5e7eb
               text-align center
               font-size 12px
@@ -605,6 +616,7 @@ export default function Sheet(api, table) {
               bc ${rowSel ? '#dbeafe' : '#f8f9fa'}
               cursor pointer
               user-select none
+              line-height 36px
               &:hover { bc ${rowSel ? '#dbeafe' : '#e9ecef'} }
             `({ onclick: e => onRowNumberClick(e, rowIdx) }, rowIdx + 1),
             visibleCols.map((col, colIdx) => {
@@ -614,7 +626,8 @@ export default function Sheet(api, table) {
               const bg = (!isActive && isSel) ? '#eef3ff' : 'transparent'
 
               return s`td
-                p 6px 12px
+                p 0 12px
+                height 36px
                 border 1px solid #e5e7eb
                 box-shadow ${shadow}
                 bc ${bg}

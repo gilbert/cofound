@@ -13,7 +13,7 @@ s.mount(() => {
   return s`max-width 960px; m 40px auto; font-family system-ui, sans-serif`(
     s`h2 m 0 0 16px; font-weight 600; font-size 20px; c #1f2937`('Project Tracker'),
     // Tab bar
-    s`d flex; gap 0; mb 20px; border-bottom 2px solid #e5e7eb`(
+    s`d flex; gap 0; mb 28px; border-bottom 2px solid #e5e7eb`(
       tabs.map(tab =>
         s`button
           p 8px 20px
