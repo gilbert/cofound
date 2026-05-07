@@ -147,19 +147,22 @@ export default function Sheet(api, table) {
     if (el) el.focus()
   }
 
-  function focusEditInput() {
+  function focusEditInput(selectAll) {
     const input = document.querySelector('tbody input[type="text"], tbody input[type="number"]')
-    if (input) { input.focus(); input.select() }
+    if (!input) return
+    input.focus()
+    if (selectAll) input.select()
+    else input.setSelectionRange(input.value.length, input.value.length)
   }
 
-  function startEdit(rowIdx, colIdx) {
+  function startEdit(rowIdx, colIdx, selectAll = true) {
     const col = visibleCols[colIdx]
     if (!schema.editable.includes(col)) return
     const colInfo = schema.cols[col]
     if (colInfo.type === 'boolean' || colInfo.type === 'enum') return
     const value = rows[rowIdx][col]
     editing = { rowIdx, colIdx, value: value != null ? String(value) : '' }
-    s.redraw.force().then(focusEditInput)
+    s.redraw.force().then(() => focusEditInput(selectAll))
   }
 
   function copySelection(e) {
@@ -216,13 +219,16 @@ export default function Sheet(api, table) {
         s.redraw.force().then(focusWrapper)
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        commitEdit().then(focusWrapper)
+        commitEdit().then(() => {
+          if (active.rowIdx < rows.length - 1) selectCell(active.rowIdx + 1, active.colIdx, false)
+          s.redraw.force().then(focusWrapper)
+        })
       } else if (e.key === 'Tab') {
         e.preventDefault()
         commitEdit().then(() => {
           const next = e.shiftKey ? colIdx - 1 : colIdx + 1
           if (next >= 0 && next <= maxCol) selectCell(rowIdx, next, false)
-          s.redraw()
+          s.redraw.force().then(focusWrapper)
         })
       }
       return
@@ -244,6 +250,17 @@ export default function Sheet(api, table) {
       return
     }
 
+    // Tab: always moves active cell (never extends selection)
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      const next = e.shiftKey ? active.colIdx - 1 : active.colIdx + 1
+      if (next >= 0 && next <= maxCol) {
+        selectCell(rowIdx, next, false)
+        s.redraw()
+      }
+      return
+    }
+
     // Navigation — shift extends from cursor (moving end), otherwise from active
     const from = e.shiftKey ? (cursor || active) : active
     let newRow = from.rowIdx, newCol = from.colIdx, handled = false
@@ -251,14 +268,9 @@ export default function Sheet(api, table) {
     else if (e.key === 'ArrowDown' && from.rowIdx < maxRow) { newRow++; handled = true }
     else if (e.key === 'ArrowLeft' && from.colIdx > 0) { newCol--; handled = true }
     else if (e.key === 'ArrowRight' && from.colIdx < maxCol) { newCol++; handled = true }
-    else if (e.key === 'Tab') {
-      e.preventDefault()
-      const next = e.shiftKey ? from.colIdx - 1 : from.colIdx + 1
-      if (next >= 0 && next <= maxCol) { newCol = next; handled = true }
-    }
     else if (e.key === 'Enter') {
       e.preventDefault()
-      startEdit(rowIdx, colIdx)
+      startEdit(rowIdx, colIdx, false)
       return
     }
     else if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -281,7 +293,7 @@ export default function Sheet(api, table) {
         if (colInfo.type !== 'boolean' && colInfo.type !== 'enum') {
           editing = { rowIdx, colIdx, value: e.key }
           e.preventDefault()
-          s.redraw.force().then(focusEditInput)
+          s.redraw.force().then(() => focusEditInput(false))
           return
         }
       }
@@ -366,7 +378,25 @@ export default function Sheet(api, table) {
           commitEdit().then(focusWrapper)
         },
         onkeydown: e => {
-          if (e.key === 'Enter') { e.redraw = false; e.target.blur() }
+          if (e.key === 'Enter') {
+            e.redraw = false
+            e.preventDefault()
+            commitEdit().then(() => {
+              if (active.rowIdx < rows.length - 1) selectCell(active.rowIdx + 1, active.colIdx, false)
+              s.redraw.force().then(focusWrapper)
+            })
+            return
+          }
+          if (e.key === 'Tab') {
+            e.preventDefault()
+            e.redraw = false
+            commitEdit().then(() => {
+              const next = e.shiftKey ? active.colIdx - 1 : active.colIdx + 1
+              if (next >= 0 && next <= visibleCols.length - 1) selectCell(active.rowIdx, next, false)
+              s.redraw.force().then(focusWrapper)
+            })
+            return
+          }
           if (e.key === 'Escape') { editing = null; s.redraw().then(focusWrapper) }
           e.stopPropagation()
         }
