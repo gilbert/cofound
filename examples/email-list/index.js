@@ -1,5 +1,5 @@
 import s from 'cos'
-import Sheet from './sheet.js'
+import Sheet from 'co-sheets'
 import SignupForm from './signup.js'
 
 s.mount(({}, [], { route }) =>

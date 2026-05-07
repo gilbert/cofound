@@ -1,12 +1,11 @@
 {
-  "name": "email-list",
+  "name": "project-tracker",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "cos dev",
     "start": "cos start",
-    "build": "cos build",
-    "test": "node test/run.js"
+    "build": "cos build"
   },
   "dependencies": {
     "cos": "file:../../pkg",

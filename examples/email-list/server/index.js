@@ -1,5 +1,5 @@
 import { makeDb, col } from 'cos/db'
-import { crud } from './crud.js'
+import { crud } from 'co-sheets/server.js'
 
 const schema = {
   subscribers: {

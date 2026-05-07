@@ -1,0 +1,7 @@
+{
+  "name": "co-sheets",
+  "type": "module",
+  "dependencies": {
+    "cos": "file:../../pkg"
+  }
+}
