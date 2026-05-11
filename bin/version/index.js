@@ -10,7 +10,7 @@ const depVersion = pkg(
   path.join(
     process.cwd(),
     'node_modules',
-    'cos',
+    'cofound',
     'package.json'
   )
 ).version
@@ -26,10 +26,10 @@ const cliVersion = pkg(
   )
 ).version
 
-cliVersion && console.log('cos cli          v' + cliVersion)
-depVersion && console.log('cos dependency   v' + depVersion)
+cliVersion && console.log('cofound cli          v' + cliVersion)
+depVersion && console.log('cofound dependency   v' + depVersion)
 
-const latestVersion = (await s.http('https://registry.npmjs.org/cos/latest', { timeout: 1000 }).catch(() => ({}))).version
+const latestVersion = (await s.http('https://registry.npmjs.org/cofound/latest', { timeout: 1000 }).catch(() => ({}))).version
 latestVersion && console.log(latestVersion)
 
 function pkg(x) {

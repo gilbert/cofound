@@ -1,7 +1,7 @@
 // @ts-nocheck
-import s from 'cos'
-import t from 'cos/test'
-import ssr from 'cos/ssr'
+import s from 'cofound'
+import t from 'cofound/test'
+import ssr from 'cofound/ssr'
 
 async function toHtml(x) {
   const result = await ssr(s.mount(() => x), {})

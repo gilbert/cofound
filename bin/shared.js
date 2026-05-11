@@ -136,7 +136,7 @@ export function getLocal(x) {
   if (x)
     return x
 
-  const local = path.join(process.cwd(), 'node_modules', 'cos')
+  const local = path.join(process.cwd(), 'node_modules', 'cofound')
   return fs.existsSync(local)
     ? local
     : path.join(url.fileURLToPath(new URL('.', import.meta.url)), '..')

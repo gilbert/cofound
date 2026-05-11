@@ -1,9 +1,9 @@
 {
-  "name": "cos",
+  "name": "cofound",
   "version": "1.0.0-rc.1",
-  "description": "cos",
+  "description": "cofound",
   "type": "module",
-  "types": "cos.d.ts",
+  "types": "cofound.d.ts",
   "main": "src/index.js",
   "scripts": {
     "postinstall": "node shared/server/uws.js",
@@ -12,15 +12,15 @@
     "test:ssr": "node ./tests/ssr.js",
     "test:db": "node ./tests/db.js",
     "lint": "eslint . --ignore-pattern dist.js",
-    "build:min": "esbuild src/index.js --minify --format=esm --bundle --outfile=cos.min.js",
-    "build:bundle": "esbuild src/index.js --format=esm --bundle --outfile=cos.js",
-    "build:gzip": "gzip -c cos.min.js > cos.min.js.gz && ls -l cos.min.js.gz && rm cos.min.js.gz",
-    "build:dev": "esbuild bin/develop/tools/index.js --external:fsevents --external:/node_modules/cos/* --alias:COS=./src/index.js --minify --format=esm --bundle --outfile=bin/develop/tools/dist.js"
+    "build:min": "esbuild src/index.js --minify --format=esm --bundle --outfile=cofound.min.js",
+    "build:bundle": "esbuild src/index.js --format=esm --bundle --outfile=cofound.js",
+    "build:gzip": "gzip -c cofound.min.js > cofound.min.js.gz && ls -l cofound.min.js.gz && rm cofound.min.js.gz",
+    "build:dev": "esbuild bin/develop/tools/index.js --external:fsevents --external:/node_modules/cofound/* --alias:COFOUND=./src/index.js --minify --format=esm --bundle --outfile=bin/develop/tools/dist.js"
   },
   "exports": {
     ".": {
-      "types": "./cos.d.ts",
-      "node": "./ssr/cos.js",
+      "types": "./cofound.d.ts",
+      "node": "./ssr/cofound.js",
       "import": "./src/index.js",
       "default": "./src/index.js"
     },
@@ -38,7 +38,7 @@
     "./server/test-utils": "./shared/server/test-utils.js"
   },
   "bin": {
-    "cos": "./bin/index.js"
+    "cofound": "./bin/index.js"
   },
   "files": [
     "/bin",
@@ -51,8 +51,8 @@
   "keywords": [
     "view",
     "framework",
-    "cos.js",
-    "cos",
+    "cofound.js",
+    "cofound",
     "simple",
     "css",
     "html",

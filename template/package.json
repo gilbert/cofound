@@ -1,14 +1,14 @@
 {
-  "name": "my-cos-app",
+  "name": "my-cofound-app",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cos dev",
-    "start": "cos start",
-    "build": "cos build",
+    "dev": "cofound dev",
+    "start": "cofound start",
+    "build": "cofound build",
     "test": "node test/run.js"
   },
   "dependencies": {
-    "cos": "latest"
+    "cofound": "latest"
   }
 }

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import Url from 'node:url'
 import process from 'node:process'
 
-import exit from 'cos/exit'
+import exit from 'cofound/exit'
 import p from './log.js'
 import config from './config.js'
 import api from './api.js'
@@ -251,7 +251,7 @@ function logStack(stack, max = 10) {
   return stack
     .filter(s =>
       s.url && api.blackbox.every(x => !s.url.match(new RegExp(x, 'i')))
-            && !s.url.includes('cos/bin/develop/log.js')
+            && !s.url.includes('cofound/bin/develop/log.js')
     )
     .slice(0, max)
     .map(x =>

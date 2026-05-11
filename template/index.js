@@ -1,4 +1,4 @@
-import s from 'cos'
+import s from 'cofound'
 
 s.mount(() => {
   const count = s.live(0)
@@ -9,7 +9,7 @@ s.mount(() => {
     font-family system-ui, sans-serif
     text-align center
   `(
-    s`h1 mb 16px`('My Cos App'),
+    s`h1 mb 16px`('My Cofound App'),
     s`p font-size 48px; mb 16px`(count()),
     s`button
       p 8px 16px

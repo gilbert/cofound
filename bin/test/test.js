@@ -105,10 +105,10 @@ async function run() {
   success.length && p(failed.length ? '🫳' : '🎉', success.length, 'test' + (success.length === 1 ? '' : 's'), 'succeeded')
   failed.map(x => p.error('💥 ' + x.path.join(' > ') + ' > ' + x.name + ': ' + (x.error.message || x.error)))
   failed.length && p.error('🚨', failed.length, 'test' + (failed.length === 1 ? '' : 's'), 'failed')
-  if (globalThis.cosdev) {
+  if (globalThis.cofounddev) {
     await new Promise(r => setTimeout(r, 300))
-    globalThis.cosdev.tested = ignored || failed.length ? 1 : 0
-    globalThis.cosdev.api?.tested(globalThis.cosdev.exit_code)
+    globalThis.cofounddev.tested = ignored || failed.length ? 1 : 0
+    globalThis.cofounddev.api?.tested(globalThis.cofounddev.exit_code)
   } else if (failed.length) {
     process.exit(1)
   }

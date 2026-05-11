@@ -7,7 +7,7 @@ import path from 'node:path'
 import util from 'node:util'
 import cp from 'node:child_process'
 
-import exit from 'cos/exit'
+import exit from 'cofound/exit'
 import config from './config.js'
 import api from './api.js'
 import { rewrite } from './shared.js'
@@ -20,7 +20,7 @@ if (!config.chromePath || !fs.existsSync(config.chromePath))
 
 let root
 
-const hmr = 'window.self===window.top&&(window.cosdevhmr=1);Error.stackTraceLimit=128;'
+const hmr = 'window.self===window.top&&(window.cofounddevhmr=1);Error.stackTraceLimit=128;'
     , replace = Math.random()
 
 api.log({ replace, from: 'browser', type: 'status', value: '⏳' })

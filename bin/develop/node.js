@@ -3,7 +3,7 @@ import URL from 'node:url'
 import path from 'node:path'
 import cp from 'node:child_process'
 
-import exit from 'cos/exit'
+import exit from 'cofound/exit'
 import color from '../color.js'
 import coverage from '../test/coverage.js'
 

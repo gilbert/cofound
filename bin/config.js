@@ -54,7 +54,7 @@ async function fromArgs() {
   }
 
   return args(argv, {
-    envPrefix: 'COS',
+    envPrefix: 'COFOUND',
     commands: {
       $         : 'help',
       build     : 1,
@@ -148,7 +148,7 @@ async function fromArgs() {
 }
 
 function needsEntry(config) {
-  return !config.static && (env.COS_BUILD || config.build || config.generate || config.develop || config.start || config.test || config.oneoffScript)
+  return !config.static && (env.COFOUND_BUILD || config.build || config.generate || config.develop || config.start || config.test || config.oneoffScript)
 }
 
 export function getEntry(x, config) {
@@ -207,7 +207,7 @@ function mkdir(x) {
 function getHome(x) {
   x = x || path.join(
     process.platform === 'win32' && env.USERPROFILE || env.HOME,
-    '.cos'
+    '.cofound'
   )
   fs.mkdirSync(x, { recursive: true })
   return x
@@ -268,7 +268,7 @@ function getProjects(x, xs) {
   return mkdir(x
     ? x
     : env.WSL_DISTRO_NAME
-    ? env.PATH.match(/\/mnt\/c\/Users\/[^/]+\//)[0] + '.cos/wsl_projects'
+    ? env.PATH.match(/\/mnt\/c\/Users\/[^/]+\//)[0] + '.cofound/wsl_projects'
     : path.join(xs.home, 'projects')
   )
 }

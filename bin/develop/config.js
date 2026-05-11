@@ -18,10 +18,10 @@ const project = path.join(config.projectsDir, config.port + '-' + path.basename(
 fs.mkdirSync(project, { recursive: true })
 
 const env        = process.env
-    , url        = env.COS_URL = env.COS_URL || getUrl()
+    , url        = env.COFOUND_URL = env.COFOUND_URL || getUrl()
     , origin     = new URL(url).origin
-    , devPort    = env.COS_DEV_PORT = env.COS_DEV_PORT || await getDevPort()
-    , nodePort   = env.COS_NODE_PORT = env.COS_NODE_PORT || await reservePort()
+    , devPort    = env.COFOUND_DEV_PORT = env.COFOUND_DEV_PORT || await getDevPort()
+    , nodePort   = env.COFOUND_NODE_PORT = env.COFOUND_NODE_PORT || await reservePort()
 
 export { resolve }
 
@@ -34,14 +34,14 @@ export default Object.assign(config, {
 })
 
 function getUrl() {
-  const x = path.join(project, '.cos-url')
+  const x = path.join(project, '.cofound-url')
   return !config.test && fs.existsSync(x)
     ? fs.readFileSync(x, 'utf8')
     : 'http://127.0.0.1:' + config.port
 }
 
 async function getDevPort() {
-  const portPath = path.join(project, '.cos-dev-port')
+  const portPath = path.join(project, '.cofound-dev-port')
   try {
     fs.accessSync(path.join(project, 'SingletonSocket'))
     return parseInt(fs.readFileSync(portPath, 'utf8'))

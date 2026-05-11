@@ -44,7 +44,7 @@ s.css.reset`
 <details>
 <summary>Default CSS Reset</summary>
 
-Cos applies a minimal default CSS reset:
+Cofound applies a minimal default CSS reset:
 
 ```css
 *,
@@ -98,7 +98,7 @@ ol, ul, li {
 
 ## Units
 
-Cos supports all standard CSS units (px, em, rem, %, vw, vh, etc.) when explicitly defined, but also provides implicit unit handling. Pixel units are favored — cos automatically appends `px` to numeric values where appropriate, unless the CSS property takes a unitless value.
+Cofound supports all standard CSS units (px, em, rem, %, vw, vh, etc.) when explicitly defined, but also provides implicit unit handling. Pixel units are favored — cofound automatically appends `px` to numeric values where appropriate, unless the CSS property takes a unitless value.
 
 ```js
 s`span
@@ -112,7 +112,7 @@ s`span
 
 ## Variables `$variable`
 
-Cos provides CSS variables with the `$` prefix syntax. Variables can be defined globally using `s.css` or locally within components.
+Cofound provides CSS variables with the `$` prefix syntax. Variables can be defined globally using `s.css` or locally within components.
 
 ```css
 s.css`

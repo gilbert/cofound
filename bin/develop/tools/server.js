@@ -1,5 +1,5 @@
-import Server from 'cos/server'
-import exit from 'cos/exit'
+import Server from 'cofound/server'
+import exit from 'cofound/exit'
 
 import api from '../api.js'
 import editor from './editor.js'

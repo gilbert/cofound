@@ -1,10 +1,10 @@
 import path from 'path'
 import ESBuild from 'esbuild'
-import 'cos/env'
+import 'cofound/env'
 import { extensionless, getLocal } from '../../bin/shared.js'
 
 export default async function(x = {}) {
-  process.env.COS_BUILD = true
+  process.env.COFOUND_BUILD = true
   const config = (await import('../../bin/config.js')).default
   const {
     entry = config.entry,
@@ -34,21 +34,21 @@ export default async function(x = {}) {
     },
     plugins: [
       {
-        name: 'cos',
+        name: 'cofound',
         setup: x => x.onResolve(
-          { filter: /^cos$/ },
+          { filter: /^cofound$/ },
           () => ({ path: path.join(getLocal(), 'src', 'index.js') })
         )
       },
       {
-        name: 'cosssr',
+        name: 'cofoundssr',
         setup: x => x.onResolve(
           { filter: /server\// },
           () => ({ external: true })
         )
       },
       {
-        name: 'cosport',
+        name: 'cofoundport',
         setup: x => x.onResolve(
           { filter: /^\// },
           x => ({ path: abs(extensionless(x.path, cwd) || x.path, cwd) })
