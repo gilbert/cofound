@@ -1,8 +1,8 @@
-# Cosine Development Tips & Gotchas
+# Tips & Gotchas
 
 ## CSS Shorthands
 - `min-h` is **not** a valid shorthand. Use `min-height` instead.
-- See `pkg/src/shorthands.js` for the full list of valid shorthands (e.g., `w`, `h`, `d`, `p`, `m`, `bc`, `c`, etc.)
+- See the [shorthands table](frontend/css.md#shorthands) for the full list of valid shorthands (e.g., `w`, `h`, `d`, `p`, `m`, `bc`, `c`, etc.)
 - Invalid shorthands are silently passed through as-is, producing broken CSS with no error.
 
 ## Component Lifecycle — NO constructors
@@ -19,7 +19,7 @@
 - Use `e.redraw = false` in `onblur` and `onkeydown` (Enter) handlers to prevent cos from triggering an immediate redraw that interferes with the blur/save flow.
 
 ## Event Handling
-- cos automatically calls `redraw()` after every event handler (line 1306 in `pkg/src/index.js`).
+- cos automatically calls `redraw()` after every event handler.
 - For async handlers, cos also calls `result.then(redraw)` if the handler returns a promise.
 - Set `e.redraw = false` to suppress the automatic redraw for events where you want to control the timing yourself.
 - cos uses event delegation via vdom — checking `element.onclick` in the DOM will return `false` even when handlers are properly attached.
@@ -28,14 +28,3 @@
 - Cos uses CSS custom properties (`--var`) for template literal interpolations. The interpolated expression becomes the value of the custom property.
 - **Units must be inside the interpolation**, not outside. `top ${val}px` produces `top: var(--xxx)px` which is invalid CSS. Use `top ${val + 'px'}` so the custom property value is `33px` and the rule becomes `top: var(--xxx)` → `top: 33px`.
 - Each unique set of interpolated values generates a new CSS class. This is fine for typical use.
-
-## Browser Automation (Claude in Chrome)
-- The `type` action doesn't reliably work with cos's controlled inputs. Use `javascript_tool` with native value setter + `input` event dispatch instead:
-  ```js
-  const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-  nativeSet.call(input, 'value');
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  ```
-- Use `dispatchEvent(new Event('blur', { bubbles: true }))` to blur, not `element.blur()`.
-- Console/network tracking starts when the tool is first called. Must call the tracking tool first, *then* reload the page to capture load-time events.
-- Navigation resets tracking — need to re-establish tracking after each `navigate` call.
