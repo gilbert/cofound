@@ -1,6 +1,6 @@
 import { col, datatypeToSql } from './schema.js'
 
-const MIGRATIONS_TABLE = 'cos_migrations'
+const MIGRATIONS_TABLE = 'cofound_migrations'
 
 // ANSI escape codes (inline, no dependency)
 const cyan = (s) => `\x1b[36m${s}\x1b[0m`

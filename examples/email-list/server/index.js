@@ -1,4 +1,4 @@
-import { makeDb, col } from 'cos/db'
+import { makeDb, col } from 'cofound/db'
 import { crud } from 'co-sheets/server.js'
 
 const schema = {

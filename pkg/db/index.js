@@ -5,7 +5,7 @@ import { customAlphabet } from './nanoid.js'
 import { col, Column, datatypeToSql } from './schema.js'
 import { migrate } from './migrate.js'
 
-const log = Debug('cos:sql')
+const log = Debug('cofound:sql')
 
 // ---------------------------------------------------------------------------
 // Database setup

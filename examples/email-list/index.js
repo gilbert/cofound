@@ -1,4 +1,4 @@
-import s from 'cos'
+import s from 'cofound'
 import Sheet from 'co-sheets'
 import SignupForm from './signup.js'
 

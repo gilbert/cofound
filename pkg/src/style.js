@@ -14,7 +14,7 @@ const prefix = 's'
     , loadCache = new Map()
 
 export const aliasCache = {}
-export const styleElement = x => style || (style = x || doc.querySelector('style.cos') || doc.createElement('style'))
+export const styleElement = x => style || (style = x || doc.querySelector('style.cofound') || doc.createElement('style'))
 export const cssRules = () => style ? style.sheet.cssRules : []
 
 export function load(href) {
@@ -490,7 +490,7 @@ function getUnit(prop, fn = '') {
 }
 
 export function formatValue(v, { property, fns, unit, transform }) {
-  isFunction(v) && (v = window.isServerCos && !isObservable(v) ? '6iacvt' : v())
+  isFunction(v) && (v = window.isServerCofound && !isObservable(v) ? '6iacvt' : v())
   transform && (v = transform(v))
   if (!v && v !== 0)
     return ''
@@ -547,7 +547,7 @@ function vendor(x) {
     if (vendorMap[x])
       return vendorMap[x]
 
-    x.indexOf('--') !== 0 && window.cosdevhmr && window.console.error(x, 'css property not found') // eslint-disable-line
+    x.indexOf('--') !== 0 && window.cofounddevhmr && window.console.error(x, 'css property not found') // eslint-disable-line
   }
   return x
 }

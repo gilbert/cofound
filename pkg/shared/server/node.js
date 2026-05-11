@@ -117,7 +117,7 @@ class Response {
     this._res = res
     this._req = req
     this._drain = null
-    this._headers = [['Server', 'cos']]
+    this._headers = [['Server', 'cofound']]
     this._res.on('close', () => this._aborted && this._aborted())
     this._res.on('error', () => this._aborted && this._aborted())
   }

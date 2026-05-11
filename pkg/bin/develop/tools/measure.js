@@ -1,4 +1,4 @@
-import s from 'cos?dev'
+import s from 'cofound?dev'
 import api from './api.js'
 import { OKLCHtoHEX, OKLCHtoCSS } from './eyedropper/color.js'
 

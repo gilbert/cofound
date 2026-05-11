@@ -4,13 +4,13 @@ import { URL, fileURLToPath, pathToFileURL } from 'node:url'
 
 import { modify, extensionless, getSucrase, getTSConfigRaw, getPkgs } from './shared.js'
 
-const pkg = JSON.parse(fs.readFileSync(path.join(process.env.COS_LOCAL, 'package.json')))
+const pkg = JSON.parse(fs.readFileSync(path.join(process.env.COFOUND_LOCAL, 'package.json')))
 const cwd = process.cwd()
 
 const config = {
   nojail: true, // TEMP
-  debug: process.env.COS_DEBUG === 'true',
-  nojail: process.env.COS_NOJAIL === 'true',
+  debug: process.env.COFOUND_DEBUG === 'true',
+  nojail: process.env.COFOUND_NOJAIL === 'true',
   sucrase: await getSucrase(null, { pkgs: getPkgs(cwd) }),
   tsconfigRaw: getTSConfigRaw(null, { tsconfig: path.join(cwd, 'tsconfig.json') })
 }
@@ -40,7 +40,7 @@ export function resolve(x, context, nextResolve) {
   const c = x.charCodeAt(0)
   const cwd = process.cwd()
   const isRelative = c === 46 // .
-  const isSin = !isRelative && (x === 'cos' || x.startsWith('cos/'))
+  const isSin = !isRelative && (x === 'cofound' || x.startsWith('cofound/'))
   const isAbsolute = !isSin && path.isAbsolute(x)
   const isRoot = isAbsolute && x.startsWith(cwd)
   const isURL = !isRelative && !isAbsolute && c === 102 && x.indexOf('file://') === 0 // f
@@ -56,9 +56,9 @@ export function resolve(x, context, nextResolve) {
 }
 
 function resolveCos(x) {
-  const exp = pkg.exports['.' + x.slice(3)]
+  const exp = pkg.exports['.' + x.slice(7)]
   return path.join(
-    process.env.COS_LOCAL,
+    process.env.COFOUND_LOCAL,
     exp?.node || exp?.import || exp?.default || exp || x
   )
 }

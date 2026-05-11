@@ -1,14 +1,14 @@
-import s from 'cos?dev'
+import s from 'cofound?dev'
 
 let ws
 connect()
 
-const debug = window.cosdev.hasAttribute('debug')
+const debug = window.cofounddev.hasAttribute('debug')
 const api = {
   log        : s.event(),
   redraw     : s.event(),
   reload     : s.event(() => location.reload()),
-  hotload    : s.event(() => window.cosdevhmr || location.reload()),
+  hotload    : s.event(() => window.cofounddevhmr || location.reload()),
   editor     : s.event(x => send('editor', x)),
   color      : s.live([0, 0, 0]),
   inspect    : s.live(false, x => send('inspect', x)),
@@ -16,7 +16,7 @@ const api = {
   parseStackTrace
 }
 
-window.cosdev.api = api
+window.cofounddev.api = api
 
 export default api
 
@@ -26,12 +26,12 @@ function tested(code) {
 }
 function connect() {
   ws = new WebSocket(
-    location.protocol.replace('http', 'ws') + location.hostname + ':' + window.cosdev.getAttribute('port')
+    location.protocol.replace('http', 'ws') + location.hostname + ':' + window.cofounddev.getAttribute('port')
   )
   ws.onmessage = onmessage
   ws.onclose = () => setTimeout(connect, 200)
   ws.onerror = error => debug && console.error(error) // eslint-disable-line
-  ws.onopen = () => window.cosdev.tested != null && tested(window.cosdev.tested)
+  ws.onopen = () => window.cofounddev.tested != null && tested(window.cofounddev.tested)
 }
 
 function send(event, data) {
@@ -49,7 +49,7 @@ export function parseStackTrace(x) {
       ? x.match(/( +at )?([^/]*)[@(](.+):([0-9]+):([0-9]+)/i)
       : x.match(/( +at)( )?(.+):([0-9]+):([0-9]+)$/i),
 
-    x && (debug || !x[3].includes('/cos/src')) && acc.push({
+    x && (debug || !x[3].includes('/cofound/src')) && acc.push({
       name: x[2].trim(),
       file: x[3].replace(window.location.origin, ''),
       line: parseInt(x[4]),

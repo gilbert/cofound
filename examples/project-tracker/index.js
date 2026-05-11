@@ -1,5 +1,9 @@
-import s from 'cos'
+import s from 'cofound'
 import Sheet from 'co-sheets'
+import { createSyncClient } from 'co-sync'
+
+const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+const db = createSyncClient(protocol + '//' + location.host + '/sync/')
 
 const tabs = [
   { key: 'tasks', label: 'Tasks' },
@@ -31,7 +35,7 @@ s.mount(() => {
         }, tab.label)
       )
     ),
-    // Sheet for current tab
-    Sheet('/api', currentTab)
+    // Sheet for current tab with real-time sync
+    Sheet('/api', currentTab, { sync: db })
   )
 })

@@ -4,10 +4,10 @@ import { voidTags } from './shared.js'
 
 import s from '../src/index.js'
 
-const noscript = process.env.COS_NOSCRIPT
+const noscript = process.env.COFOUND_NOSCRIPT
 
-s.is = { server: s.isServer = window.isServerCos = true }
-s.title = process.env.COS_TITLE
+s.is = { server: s.isServer = window.isServerCofound = true }
+s.title = process.env.COFOUND_TITLE
 s.mimes = mimes
 s.trust = trust
 

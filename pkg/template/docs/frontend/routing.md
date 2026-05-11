@@ -1,8 +1,8 @@
 # Routing
 
-Cos includes a minimal router. There is always a scoped router available in context which lets you implement routing (as nested as you like) without worrying about the mount point. Using `href` is the default way of telling cos to route.
+Cofound includes a minimal router. There is always a scoped router available in context which lets you implement routing (as nested as you like) without worrying about the mount point. Using `href` is the default way of telling cofound to route.
 
-Every route instance has a `.toString` method, so you can do `href: route + 'sub-page'`. You can use `route.has()` to check which route is active, and cos also sets an `[active]` attribute for styling.
+Every route instance has a `.toString` method, so you can do `href: route + 'sub-page'`. You can use `route.has()` to check which route is active, and cofound also sets an `[active]` attribute for styling.
 
 ```js
 s.mount(({ route }) => [
@@ -29,4 +29,4 @@ s.mount(({ route }) => [
 
 ## Target
 
-For any `s`a`({ href: "/my/route" }, ...)` tag, cos automatically hooks it into `history.pushState` routing. If you don't want this behavior (e.g. to hit a backend route like `/oauth/github`), add a `target: '_self'` attribute to your anchor tag.
+For any `s`a`({ href: "/my/route" }, ...)` tag, cofound automatically hooks it into `history.pushState` routing. If you don't want this behavior (e.g. to hit a backend route like `/oauth/github`), add a `target: '_self'` attribute to your anchor tag.

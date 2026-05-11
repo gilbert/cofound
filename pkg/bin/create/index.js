@@ -25,14 +25,14 @@ const argv = process.argv.slice(3)
     , install = await prompt('Install?')
 
 const serverScript = `export default async function(app) {
-  app.get('/hello', r => r.end('Welcome to cos'))
+  app.get('/hello', r => r.end('Welcome to cofound'))
 }
 `
 
-const clientScript = `import s from 'cos'
+const clientScript = `import s from 'cofound'
 
 s.mount(() =>
-  s\`h1\`('Welcome to cos')
+  s\`h1\`('Welcome to cofound')
 )
 `
 
@@ -41,31 +41,31 @@ pkg.name = name
 mk(target)
 process.chdir(target)
 
-pkg.scripts.build = 'cos build'
-pkg.scripts.generate = 'cos generate'
+pkg.scripts.build = 'cofound build'
+pkg.scripts.generate = 'cofound generate'
 
 if (full) {
-  pkg.scripts.start = 'cos start'
-  pkg.scripts.dev = 'cos dev'
+  pkg.scripts.start = 'cofound start'
+  pkg.scripts.dev = 'cofound dev'
   mk(path.join(target, 'server'), 'index.js', serverScript)
   mk(path.join(target, 'public'))
   mk(target, 'index.js', clientScript.replace('export', '// Add `export default` to enable ssr with hydration\nexport'))
 } else if (script) {
-  pkg.scripts.start = 'cos start script index.js'
-  pkg.scripts.dev = 'cos dev script index.js'
+  pkg.scripts.start = 'cofound start script index.js'
+  pkg.scripts.dev = 'cofound dev script index.js'
   mk(target, 'index.js', '// Do your thing\n')
 } else if (noscript) {
-  pkg.scripts.start = 'cos start noscript'
-  pkg.scripts.dev = 'cos dev noscript'
+  pkg.scripts.start = 'cofound start noscript'
+  pkg.scripts.dev = 'cofound dev noscript'
   mk(path.join(target, 'server'), 'index.js', serverScript)
   mk(path.join(target, 'public'))
   mk(target, 'index.js', clientScript)
 } else if (staticServe) {
-  pkg.scripts.start = 'cos start static'
-  pkg.scripts.dev = 'cos dev static'
+  pkg.scripts.start = 'cofound start static'
+  pkg.scripts.dev = 'cofound dev static'
 } else if (server) {
-  pkg.scripts.start = 'cos start server'
-  pkg.scripts.dev = 'cos dev server'
+  pkg.scripts.start = 'cofound start server'
+  pkg.scripts.dev = 'cofound dev server'
   mk(target, 'index.js', serverScript)
 }
 
@@ -74,12 +74,12 @@ mk(target, 'package.json', JSON.stringify(pkg, null, 2))
 cpDir(new URL('../../template/docs', import.meta.url).pathname, path.join(target, 'docs'))
 
 git && (cp.execSync('git init', { stdio: 'inherit' }), mk(target, '.gitignore', 'node_modules\n.env'))
-install && cp.execSync('npm install cos', { stdio: 'inherit' })
+install && cp.execSync('npm install cofound', { stdio: 'inherit' })
 
 !global.print && console.log( // eslint-disable-line
   cd
-    ? '\nRun `cd ' + name + '` and then `cos dev` to start developing\n'
-    : '\nRun `cos dev` to start developing\n'
+    ? '\nRun `cd ' + name + '` and then `cofound dev` to start developing\n'
+    : '\nRun `cofound dev` to start developing\n'
 )
 
 rl.close()

@@ -1,12 +1,12 @@
 # Components
 
-Cos revolves around components, which are the building blocks of your application. Components can be stateless, stateful, or asynchronous, and they support a variety of signatures. All components in cos are made to allow overriding styles anywhere they are used.
+Cofound revolves around components, which are the building blocks of your application. Components can be stateless, stateful, or asynchronous, and they support a variety of signatures. All components in cofound are made to allow overriding styles anywhere they are used.
 
-> The beauty of the cos component model is that you will never have to change your callsite usage, even if you need to advance the complexity of your component.
+> The beauty of the cofound component model is that you will never have to change your callsite usage, even if you need to advance the complexity of your component.
 
 ## Elements
 
-Elements are composed as tagged template literals. Cos defaults to creating `div` elements if an HTML element type is not specified and allows `#` and class names `.` right after the element type or at the start of the tagged template literal to be passed.
+Elements are composed as tagged template literals. Cofound defaults to creating `div` elements if an HTML element type is not specified and allows `#` and class names `.` right after the element type or at the start of the tagged template literal to be passed.
 
 ```js
 s``('Hello!')                  // -> <div>Hello!</div>
@@ -23,7 +23,7 @@ s`span
 
 ## Attributes
 
-Element attributes support HTML attribute properties. Cos resolves attributes via JavaScript and DOM APIs (`setAttribute`). Event handler binding supports all DOM events, including those without an `on` property, like `touchstart`. Event handlers are enhanced, with per-element references and additional properties for improved rendering control.
+Element attributes support HTML attribute properties. Cofound resolves attributes via JavaScript and DOM APIs (`setAttribute`). Event handler binding supports all DOM events, including those without an `on` property, like `touchstart`. Event handlers are enhanced, with per-element references and additional properties for improved rendering control.
 
 ### dom `{ dom: () => {} }`
 
@@ -62,7 +62,7 @@ s`div`({ deferrable: false })
 
 ### key `{ key: any }`
 
-The `key` property maps a DOM element to its respective item in an array of data. It is used as a unique child identifier for keyed lists. When you render arrays of children, cos compares the new view list to the old one. If items have a key, cos can track their identity across redraws.
+The `key` property maps a DOM element to its respective item in an array of data. It is used as a unique child identifier for keyed lists. When you render arrays of children, cofound compares the new view list to the old one. If items have a key, cofound can track their identity across redraws.
 
 ```js
 const Item = s(({ label }) => s`li`(label));
@@ -78,9 +78,9 @@ const List = s(({ items }) =>
 );
 ```
 
-Without `key`, cos compares children by order only. If items move around, the wrong DOM nodes can be reused or recreated unnecessarily. With `key`, cos builds a lookup map so it can re-use the existing DOM node for the same identity, even if the order changes.
+Without `key`, cofound compares children by order only. If items move around, the wrong DOM nodes can be reused or recreated unnecessarily. With `key`, cofound builds a lookup map so it can re-use the existing DOM node for the same identity, even if the order changes.
 
-> Cos also uses key as part of the component's identity. If a component's key changes, cos considers it a different instance and will tear down the old one and mount a fresh one.
+> Cofound also uses key as part of the component's identity. If a component's key changes, cofound considers it a different instance and will tear down the old one and mount a fresh one.
 
 ### state `{ state: object }`
 
@@ -180,7 +180,7 @@ s.mount(({}, [], { doc, state }) => {
 
 ## Mounting `s.mount(...)`
 
-The mount method renders elements and components. By default, cos mounts to `document.body`, but you can provide a specific element.
+The mount method renders elements and components. By default, cofound mounts to `document.body`, but you can provide a specific element.
 
 ```js
 // Mounting to document.body
@@ -325,7 +325,7 @@ const result = s(
 
 ## DAFT
 
-DAFT (Default Argument Function Thunk) is a signature pattern unique to cos components that lets you declare scope-level variables as default arguments in your render functions. Instead of re-declaring values inside your component body, DAFT allows you to express them inline at the signature level.
+DAFT (Default Argument Function Thunk) is a signature pattern unique to cofound components that lets you declare scope-level variables as default arguments in your render functions. Instead of re-declaring values inside your component body, DAFT allows you to express them inline at the signature level.
 
 ```js
 s((attrs, children, context) => () =>

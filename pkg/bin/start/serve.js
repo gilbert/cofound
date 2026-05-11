@@ -4,8 +4,8 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import { isMainThread, parentPort } from 'node:worker_threads'
 
-import exit from 'cos/exit'
-import Server from 'cos/server'
+import exit from 'cofound/exit'
+import Server from 'cofound/server'
 import '../favicon.js'
 
 import ssr, { wrap } from '../../ssr/index.js'
@@ -103,7 +103,7 @@ function render(r) {
     x => {
       r.end(
         wrap(x, {
-          body: src ? '<script>window.cosLastModified = "' + modified + '";</script><script type=module src="/index.js?v=' + modified + '"></script>' : ''
+          body: src ? '<script>window.cofoundLastModified = "' + modified + '";</script><script type=module src="/index.js?v=' + modified + '"></script>' : ''
         }),
         x.status || 200,
         {
@@ -161,8 +161,8 @@ async function runAcme() {
   } else {
     console.log('ACME: Certificate valid for', Math.round(left / 1000 / 60 / 60 / 24), 'more day(s)') // eslint-disable-line
   }
-  config.ssl.cert = process.env.COS_SSL_CERT = process.env.SSL_CERT = certPath
-  config.ssl.key = process.env.COS_SSL_KEY = process.env.SSL_KEY = keyPath
+  config.ssl.cert = process.env.COFOUND_SSL_CERT = process.env.SSL_CERT = certPath
+  config.ssl.key = process.env.COFOUND_SSL_KEY = process.env.SSL_KEY = keyPath
 }
 
 async function readOrNull(x) {

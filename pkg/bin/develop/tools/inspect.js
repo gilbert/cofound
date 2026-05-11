@@ -1,4 +1,4 @@
-import s from 'cos?dev'
+import s from 'cofound?dev'
 import api from './api.js'
 import userland, { stackTrace } from './userland.js'
 import measure from './measure.js'
@@ -135,11 +135,11 @@ function keydown(e) {
 }
 
 function mouseover(e) {
-  window.costools && window.costools.contains(e.target) || over(e.target)
+  window.cofoundtools && window.cofoundtools.contains(e.target) || over(e.target)
 }
 
 function mousemove(e) {
-  window.costools && window.costools.contains(e.target) || (
+  window.cofoundtools && window.cofoundtools.contains(e.target) || (
     x(e.clientX),
     y(e.clientY)
   )

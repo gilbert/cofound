@@ -1,4 +1,4 @@
-import { Model, migrate } from 'cos/db'
+import { Model, migrate } from 'cofound/db'
 
 export function crud(db, schema, edits = {}) {
   migrate(db, schema)
@@ -55,7 +55,8 @@ export function crud(db, schema, edits = {}) {
     return result
   }
 
-  return function mountRoutes(app, prefix = '/api') {
+  return function mountRoutes(app, prefix = '/api', options = {}) {
+    const { notify } = options
     app.get(prefix + '/_schema/:table', r => {
       const t = r.params.table
       if (!tables.includes(t)) return r.json({ error: 'Unknown table' }, 404)
@@ -90,6 +91,7 @@ export function crud(db, schema, edits = {}) {
         }
         const id = model.insert(attrs)
         r.json(model.findBy({ id }), 201)
+        if (notify) notify(t)
       })
 
       app.patch(prefix + '/' + t + '/:id', async r => {
@@ -102,6 +104,7 @@ export function crud(db, schema, edits = {}) {
         }
         model.updateById(row.id, set)
         r.json(model.findBy({ id: row.id }))
+        if (notify) notify(t)
       })
 
       app.delete(prefix + '/' + t + '/:id', r => {
@@ -109,6 +112,7 @@ export function crud(db, schema, edits = {}) {
         if (!row) return r.json({ error: 'Not found' }, 404)
         model.deleteWhere({ id: row.id })
         r.json({ ok: true })
+        if (notify) notify(t)
       })
     }
   }

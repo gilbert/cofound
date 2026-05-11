@@ -1,6 +1,6 @@
-import t from 'cos/test'
-import { makeTestDb } from 'cos/db/test-utils'
-import { makeTestServer } from 'cos/server/test-utils'
+import t from 'cofound/test'
+import { makeTestDb } from 'cofound/db/test-utils'
+import { makeTestServer } from 'cofound/server/test-utils'
 import { createRoutes } from '../server/index.js'
 
 function eq(a, b) {

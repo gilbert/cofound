@@ -1,6 +1,6 @@
 import '../env.js'
 import config from '../config.js'
-import build from 'cos/build'
+import build from 'cofound/build'
 
 await build({
   ...config,

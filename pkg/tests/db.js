@@ -1,6 +1,6 @@
-import t from 'cos/test'
-import { makeDb, col, Model, Sql, migrate, generateUid } from 'cos/db'
-import { makeTestDb } from 'cos/db/test-utils'
+import t from 'cofound/test'
+import { makeDb, col, Model, Sql, migrate, generateUid } from 'cofound/db'
+import { makeTestDb } from 'cofound/db/test-utils'
 
 function eq(a, b) {
   const as = JSON.stringify(a), bs = JSON.stringify(b)

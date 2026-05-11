@@ -1,6 +1,6 @@
-# Cosine
+# Cofound
 
-Cosine (cos) is a lightweight, reactive JavaScript framework for building dynamic, performant web applications. It uses a declarative, component-based approach — if you understand HTML, CSS, and JavaScript, you'll understand cos.
+Cofound (cofound) is a lightweight, reactive JavaScript framework for building dynamic, performant web applications. It uses a declarative, component-based approach — if you understand HTML, CSS, and JavaScript, you'll understand cofound.
 
 ## Project Structure
 
@@ -18,32 +18,32 @@ Cosine (cos) is a lightweight, reactive JavaScript framework for building dynami
 Create a new project:
 
 ```bash
-cos create
+cofound create
 ```
 
 Start development (launches dev server with hot reload):
 
 ```bash
-cos dev
+cofound dev
 ```
 
 Build for production:
 
 ```bash
-cos build
+cofound build
 ```
 
 ## How It Works
 
 ### Client
 
-The client entry point (`index.js`) imports `s` from `cos` and uses `s.mount()` to render the application:
+The client entry point (`index.js`) imports `s` from `cofound` and uses `s.mount()` to render the application:
 
 ```js
-import s from 'cos'
+import s from 'cofound'
 
 s.mount(() =>
-  s`h1`('Welcome to cos')
+  s`h1`('Welcome to cofound')
 )
 ```
 

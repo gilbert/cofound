@@ -2,7 +2,7 @@ import process from 'node:process'
 
 import window from './window.js'
 
-import s from 'cos'
+import s from 'cofound'
 import query from '../src/query.js'
 import router from '../src/router.js'
 import { asLocation, wrap, voidTags } from './shared.js'
@@ -32,7 +32,7 @@ class TimeoutError extends Error {}
 let lastWasText = false
   , wasText = false
 
-const noscript = process.env.COS_NOSCRIPT
+const noscript = process.env.COFOUND_NOSCRIPT
 const ignoredServerAttr = x => x !== 'value' && x !== 'href' && x !== 'type' && x !== 'src' && x !== 'srcset' && ignoredAttr(x)
 const $uid = Symbol('uid')
 const defaultTimeout = 1000 * 60 * 2
@@ -53,7 +53,7 @@ export default function(mount, serverAttrs = {}, serverContext = {}, browserAttr
   serverContext.query = query(s, window.location)
 
   const headers = {
-    Server: 'cos',
+    Server: 'cofound',
     'Content-Type': 'text/html; charset=UTF-8',
     ...(serverContext.headers || {})
   }
@@ -106,7 +106,7 @@ export default function(mount, serverAttrs = {}, serverContext = {}, browserAttr
   )
 
   return tryPromise(result, x => {
-    const css = '<style class=cos>' + cssRules().join('') + '</style>'
+    const css = '<style class=cofound>' + cssRules().join('') + '</style>'
     return {
       headers,
       links,

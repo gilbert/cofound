@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cos dev",
-    "start": "cos start",
-    "build": "cos build"
+    "dev": "cofound dev",
+    "start": "cofound start",
+    "build": "cofound build"
   },
   "dependencies": {
-    "cos": "file:../../pkg",
-    "co-sheets": "file:../../infra/co-sheets"
+    "cofound": "file:../../pkg",
+    "co-sheets": "file:../../infra/co-sheets",
+    "co-sync": "file:../../infra/co-sync"
   }
 }

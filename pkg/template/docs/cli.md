@@ -1,6 +1,6 @@
 # CLI
 
-Cos ships with an all-in-one command-line interface. The CLI handles development, bundling, and project generation.
+Cofound ships with an all-in-one command-line interface. The CLI handles development, bundling, and project generation.
 
 ### What's Included
 
@@ -12,18 +12,18 @@ Cos ships with an all-in-one command-line interface. The CLI handles development
 ## Commands
 
 ```bash
-cos build       # Build for production
-cos create      # Create a new project
-cos develop     # Development mode with hot reload
-cos generate    # Generate static HTML
-cos start       # Start production server
-cos test        # Run tests
-cos purge       # Clear cached projects
-cos help        # Help screen
-cos version     # Print current version
+cofound build       # Build for production
+cofound create      # Create a new project
+cofound develop     # Development mode with hot reload
+cofound generate    # Generate static HTML
+cofound start       # Start production server
+cofound test        # Run tests
+cofound purge       # Clear cached projects
+cofound help        # Help screen
+cofound version     # Print current version
 ```
 
-Commands can be abbreviated to their first letter (e.g., `cos d` for `cos develop`).
+Commands can be abbreviated to their first letter (e.g., `cofound d` for `cofound develop`).
 
 Dependencies are managed with npm:
 
@@ -33,13 +33,13 @@ npm install <package>
 
 ## Testing
 
-Cos provides a testing framework through its `cos/test` module. The testing system uses tagged template literals for expressive test cases.
+Cofound provides a testing framework through its `cofound/test` module. The testing system uses tagged template literals for expressive test cases.
 
 ### Writing Tests
 
 ```js
-import s from 'cos'
-import t from 'cos/test'
+import s from 'cofound'
+import t from 'cofound/test'
 
 t`Example`(() => {
   const actual = '<h1>actual</h1>'
@@ -51,6 +51,6 @@ t`Example`(() => {
 ### Running Tests
 
 ```bash
-cos test <path>             # Execute all tests in the specified file
-cos test <path> --headless  # Execute tests in a headless browser
+cofound test <path>             # Execute all tests in the specified file
+cofound test <path> --headless  # Execute tests in a headless browser
 ```

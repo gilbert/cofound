@@ -1,4 +1,4 @@
-import s from 'cos'
+import s from 'cofound'
 
 // Per-instance state keyed by "api/table"
 const instances = new Map()
@@ -57,7 +57,7 @@ function getSelectedBounds(st) {
   return { minRow, maxRow, minCol, maxCol }
 }
 
-export default function Sheet(api, table) {
+export default function Sheet(api, table, options) {
   const key = api + '/' + table
   const st = getState(key)
   const base = api + '/' + table
@@ -67,11 +67,20 @@ export default function Sheet(api, table) {
   if (!st.loaded) {
     st.loaded = true
     s.http.get(schemaUrl).then(r => { st.schema = r; s.redraw() })
-    s.http.get(base).then(r => {
-      st.rows = r
-      if (st.rows.length > 0) selectCell(st, 0, 0, false)
-      s.redraw()
-    })
+
+    if (options?.sync) {
+      options.sync.table(table, rows => {
+        st.rows = rows
+        if (!st.active && rows.length > 0) selectCell(st, 0, 0, false)
+        s.redraw()
+      })
+    } else {
+      s.http.get(base).then(r => {
+        st.rows = r
+        if (st.rows.length > 0) selectCell(st, 0, 0, false)
+        s.redraw()
+      })
+    }
   }
 
   if (!st.schema) return s`p c #999`('Loading...')
@@ -80,6 +89,7 @@ export default function Sheet(api, table) {
   const colLabels = visibleCols.map(c => st.schema.labels[c] || c)
 
   // Load FK lookups for any reference columns
+  const refTables = new Map()
   for (const col of visibleCols) {
     const info = st.schema.cols[col]
     if (info.references && !st.lookups[col]) {
@@ -88,6 +98,24 @@ export default function Sheet(api, table) {
       s.http.get(api + '/_lookup/' + refTable).then(r => {
         st.lookups[col] = r
         s.redraw()
+      })
+    }
+    if (info.references) {
+      const refTable = info.references.split('.')[0]
+      if (!refTables.has(refTable)) refTables.set(refTable, [])
+      refTables.get(refTable).push(col)
+    }
+  }
+
+  // Subscribe to referenced tables so FK lookups update in real-time
+  if (options?.sync && !st._lookupSynced) {
+    st._lookupSynced = true
+    for (const [refTable, cols] of refTables) {
+      options.sync.table(refTable, () => {
+        s.http.get(api + '/_lookup/' + refTable).then(r => {
+          for (const c of cols) st.lookups[c] = r
+          s.redraw()
+        })
       })
     }
   }
@@ -474,6 +502,7 @@ export default function Sheet(api, table) {
           commitEdit().then(focusWrapper)
         },
         onkeydown: e => {
+          e.stopPropagation()
           if (e.key === 'Enter') {
             e.redraw = false
             e.preventDefault()

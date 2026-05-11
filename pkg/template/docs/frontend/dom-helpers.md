@@ -1,6 +1,6 @@
 # DOM Helpers
 
-Cos provides DOM helper methods for improved interfacing on the element and component level.
+Cofound provides DOM helper methods for improved interfacing on the element and component level.
 
 ## is `s.is.<alias>`
 
@@ -18,7 +18,7 @@ s.is.desktop
 
 ## isAttrs `s.isAttrs(value)`
 
-The `s.isAttrs` function is a type guard that distinguishes whether a given value should be interpreted as a component's `attrs` object. Since the `s(...)` signature is flexible, the first argument can be either attributes or children — this helper ensures cos knows how to interpret what you've passed in.
+The `s.isAttrs` function is a type guard that distinguishes whether a given value should be interpreted as a component's `attrs` object. Since the `s(...)` signature is flexible, the first argument can be either attributes or children — this helper ensures cofound knows how to interpret what you've passed in.
 
 ```js
 s.isAttrs({ id: 'foo', class: 'bar' })   // -> true

@@ -98,7 +98,7 @@ s.redrawing = false
 s.sleep = (x, ...xs) => new Promise(r => setTimeout(r, x, ...xs))
 s.with = (x, fn) => x === undefined ? x : fn(x)
 s.isAttrs = isAttrs
-s.is = { server: s.isServer = window.isServerCos || false }
+s.is = { server: s.isServer = window.isServerCofound || false }
 s.redraw = redraw
 s.redraw.force = force
 s.mount = mount

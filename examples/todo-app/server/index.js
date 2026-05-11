@@ -1,4 +1,4 @@
-import { makeDb, Model, col, migrate } from 'cos/db'
+import { makeDb, Model, col, migrate } from 'cofound/db'
 
 const schema = {
   todos: {

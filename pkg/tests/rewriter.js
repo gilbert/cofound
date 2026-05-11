@@ -1,4 +1,4 @@
-import t from 'cos/test'
+import t from 'cofound/test'
 import rewrite from '../bin/develop/rewriter.js'
 
 t`Module Path Rewriter`(

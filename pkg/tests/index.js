@@ -1,6 +1,6 @@
 // @ts-nocheck
-import s from 'cos'
-import t from 'cos/test'
+import s from 'cofound'
+import t from 'cofound/test'
 
 const $ = window.document.querySelector.bind(window.document)
 const w = window

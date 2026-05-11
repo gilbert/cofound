@@ -1,5 +1,6 @@
-import { makeDb, col } from 'cos/db'
+import { makeDb, col } from 'cofound/db'
 import { crud } from 'co-sheets/server.js'
+import { sync } from 'co-sync/server.js'
 
 const schema = {
   projects: {
@@ -36,12 +37,24 @@ const schema = {
   }
 }
 
-const mountRoutes = crud(makeDb('app.db'), schema, {
+const db = makeDb('app.db')
+
+const mountRoutes = crud(db, schema, {
   projects: { display: 'name', editable: ['name', 'description', 'active'] },
   team_members: { display: 'name', editable: ['name', 'email', 'role', 'active'] },
   tasks: { display: 'title', editable: ['title', 'status', 'priority', 'project_id', 'assignee_id', 'done'] },
 })
 
 export default function projectTracker(app) {
-  mountRoutes(app, '/api')
+  const { notify } = sync(app, db, schema, {
+    prefix: '/sync',
+    authenticate: () => ({ id: 1 }),
+    access: {
+      projects: { read: true, write: true },
+      team_members: { read: true, write: true },
+      tasks: { read: true, write: true },
+    },
+  })
+
+  mountRoutes(app, '/api', { notify })
 }

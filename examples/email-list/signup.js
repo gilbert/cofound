@@ -1,4 +1,4 @@
-import s from 'cos'
+import s from 'cofound'
 
 let name = ''
 let email = ''

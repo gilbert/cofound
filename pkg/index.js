@@ -1,4 +1,4 @@
-import s from 'cos'
+import s from 'cofound'
 
 s.mount(({}, [], { route }) => [
   s`h1`('hi'),

@@ -2,8 +2,8 @@
 
 import path from 'node:path'
 import esbuild from 'esbuild'
-import Server from 'cos/server'
-import exit from 'cos/exit'
+import Server from 'cofound/server'
+import exit from 'cofound/exit'
 
 import favicon from '../favicon.js'
 import config, { resolve } from './config.js'
@@ -59,7 +59,7 @@ async function serve() {
     })
   )
 
-  router.get('/node_modules/cos/*', router.files(config.local, hijack))
+  router.get('/node_modules/cofound/*', router.files(config.local, hijack))
   config.bundleNodeModules && router.get('/node_modules/*', build)
   router.get(router.files(hijack))
   router.get('/favicon.ico', r => r.end(favicon))
@@ -117,14 +117,14 @@ async function build(r) {
     write: false,
     platform: 'browser',
     legalComments: 'none',
-    external: ['/node_modules/cos'], // never bundle cos
+    external: ['/node_modules/cofound'], // never bundle cofound
     plugins: [
       {
-        name: 'replace-cos-import',
+        name: 'replace-cofound-import',
         setup(build) {
-          // Replace all imports of 'cos' with '/node_modules/cos' and mark them as external
-          build.onResolve({ filter: /^cos$/ }, args => ({
-            path: '/node_modules/cos/src/index.js',
+          // Replace all imports of 'cofound' with '/node_modules/cofound' and mark them as external
+          build.onResolve({ filter: /^cofound$/ }, args => ({
+            path: '/node_modules/cofound/src/index.js',
             external: true
           }));
 
@@ -155,12 +155,12 @@ async function build(r) {
 }
 
 function getTools() {
-  const dev = true || process.env.COS_DEBUG
+  const dev = true || process.env.COFOUND_DEBUG
   return `
-    <script type=module id=cosdev platform=${ process.platform } port=${ process.env.COS_DEV_PORT } ${ process.env.COS_DEBUG ? 'debug' : '' } ${
+    <script type=module id=cofounddev platform=${ process.platform } port=${ process.env.COFOUND_DEV_PORT } ${ process.env.COFOUND_DEBUG ? 'debug' : '' } ${
       dev
-        ? 'src="/node_modules/cos/bin/develop/tools/index.js">'
-        : 'src="/node_modules/cos/bin/develop/tools/dist.js">'
+        ? 'src="/node_modules/cofound/bin/develop/tools/index.js">'
+        : 'src="/node_modules/cofound/bin/develop/tools/dist.js">'
     }</script>
   `.trim()
 }

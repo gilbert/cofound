@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Set entry path for the script
-process.env.COS_ENTRY = process.env.COS_ENTRY || process.argv[2]
+process.env.COFOUND_ENTRY = process.env.COFOUND_ENTRY || process.argv[2]
 
 // Execute the script directly without watching
 const result = cp.spawnSync(

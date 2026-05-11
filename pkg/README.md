@@ -1,5 +1,5 @@
-# cos (pkg)
+# cofound (pkg)
 
-This is the core `cos` package.
+This is the core `cofound` package.
 
 For framework documentation, see [`./template/docs/`](./template/docs/README.md).

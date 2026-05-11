@@ -1,16 +1,16 @@
 import api from './api.js'
 
-import s from 'cos'
+import s from 'cofound'
 
-import { stackTrace } from '/node_modules/cos/src/shared.js'
+import { stackTrace } from '/node_modules/cofound/src/shared.js'
 
 export default s
 
 export { stackTrace }
 
-api.redraw.observe(() => window.cosdevhmr ? s.redraw() : location.reload())
+api.redraw.observe(() => window.cofounddevhmr ? s.redraw() : location.reload())
 
-const unquoteFilename = window.cosdev.platform === 'win32'
+const unquoteFilename = window.cofounddev.platform === 'win32'
   ? /"([^<>:"/\\|?*]+)":/ig
   : /"([^\0/]+)":/ig
 

@@ -1,4 +1,4 @@
-import s from 'cos'
+import s from 'cofound'
 
 s.mount(() => {
   const todos = s.live([])

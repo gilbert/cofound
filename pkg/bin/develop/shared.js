@@ -26,9 +26,9 @@ export function isModule(x) {
 
 export function rewrite(x, file) {
   const dir = path.dirname(file)
-  if (file.endsWith('/cos/src/view.js'))
+  if (file.endsWith('/cofound/src/view.js'))
     x = x.replace('// dev-stack', 'hasOwn.call(window, stackTrace) && (this[stackTrace] = new Error().stack)')
-  if (file.endsWith('/cos/src/index.js'))
+  if (file.endsWith('/cofound/src/index.js'))
     x = x.replace('// dev-stack', 'hasOwn.call(view, stackTrace) && (dom[stackTrace] = view[stackTrace])')
 
   return 'import.meta.dev=true;'
@@ -38,7 +38,7 @@ export function rewrite(x, file) {
         x => {
           x = tryImportMap(x, file) || x
           isModule(x) || isScript(x) || (x = extensionless(x, dir) || x)
-          const entry = isModule(x) && resolveEntry(x.match(/^cos([/?].*|$)/) ? '' : fs.realpathSync(file), x)
+          const entry = isModule(x) && resolveEntry(x.match(/^cofound([/?].*|$)/) ? '' : fs.realpathSync(file), x)
           return entry
             ? '/' + entry
             : x
@@ -95,10 +95,10 @@ function removeRelativePrefix(x) {
 }
 
 function pkgLookup(name, version, pathname, pkgPath, urlPath, force) {
-  if (!force && config.bundleNodeModules && name !== 'cos') // never bundle cos
+  if (!force && config.bundleNodeModules && name !== 'cofound') // never bundle cofound
     return urlPath + pathname
 
-  const pkg = readPkgJson(pkgPath) || (name === 'cos' && readPkgJson(path.join(config.local, 'package.json')))
+  const pkg = readPkgJson(pkgPath) || (name === 'cofound' && readPkgJson(path.join(config.local, 'package.json')))
 
   if (!pkg)
     return

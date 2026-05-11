@@ -14,7 +14,7 @@ class Node {
 export default window
 
 Object.assign(window, {
-  isServerCos: true,
+  isServerCofound: true,
   Node,
   XMLHttpRequest,
   scrollTo: noop,
