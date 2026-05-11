@@ -71,6 +71,8 @@ if (full) {
 
 mk(target, 'package.json', JSON.stringify(pkg, null, 2))
 
+cpDir(new URL('../../template/docs', import.meta.url).pathname, path.join(target, 'docs'))
+
 git && (cp.execSync('git init', { stdio: 'inherit' }), mk(target, '.gitignore', 'node_modules\n.env'))
 install && cp.execSync('npm install cos', { stdio: 'inherit' })
 
@@ -81,6 +83,15 @@ install && cp.execSync('npm install cos', { stdio: 'inherit' })
 )
 
 rl.close()
+
+function cpDir(src, dest) {
+  fs.mkdirSync(dest, { recursive: true })
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const s = path.join(src, entry.name)
+    const d = path.join(dest, entry.name)
+    entry.isDirectory() ? cpDir(s, d) : fs.copyFileSync(s, d)
+  }
+}
 
 function mk(x, file, data = '') {
   fs.mkdirSync(x, { recursive: true })
