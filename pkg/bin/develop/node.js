@@ -21,6 +21,8 @@ let node
   , startPerf
   , closed
   , restarting = false
+  , restartQueued = false
+  , restartNeedsReload = false
 
 export const closing = new Promise(r => closed = r)
 
@@ -75,14 +77,27 @@ async function hotload(x) {
 }
 
 async function restart(x) {
+  x === 'reload' && (restartNeedsReload = true)
+
+  if (restarting) {
+    restartQueued = true
+    return
+  }
+
   restarting = true
   try {
-    api.log({ replace: 'nodeend', from: 'node', type: 'status', value: '🔄' })
-    await close()
-    await tryStart()
-    x === 'reload' && setTimeout(() => api.browser.reload(), 200)
+    do {
+      restartQueued = false
+      api.log({ replace: 'nodeend', from: 'node', type: 'status', value: '🔄' })
+      await close()
+      await tryStart()
+    } while (restartQueued)
+
+    restartNeedsReload && setTimeout(() => api.browser.reload(), 200)
   } finally {
     restarting = false
+    restartQueued = false
+    restartNeedsReload = false
   }
 }
 
@@ -110,7 +125,14 @@ async function close() {
     return
 
   const child = node
-  const closed = new Promise(r => child.once('close', r))
+  const closed = new Promise(r => {
+    child.once('close', r)
+    child.once('exit', r)
+  })
+  const debug = ws
+  ws = null
+  debug && debug.close()
+  child.connected && child.disconnect()
   child.kill()
   await closed
 }
@@ -124,7 +146,7 @@ async function start() {
   const promise = new Promise((r, e) => (resolve = r, reject = e))
 
   api.log({ replace, from: 'node', type: 'status', value: '⏳' })
-  node = cp.fork(
+  const child = node = cp.fork(
     config.script ? config.entry : path.join(dirname, 'serve.js'),
     process.argv.slice(2),
     {
@@ -137,16 +159,18 @@ async function start() {
     }
   )
 
-  node.stdout.setEncoding('utf8')
-  node.stdout.on('data', x => {
+  child.stdout.setEncoding('utf8')
+  child.stdout.on('data', x => {
     config.debug && console.error('Node stdout: ' + x) // eslint-disable-line
     api.log({ from: 'node', type: 'stdout', args: x })
   })
-  node.stderr.setEncoding('utf8')
-  node.stderr.on('data', async x => {
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', async x => {
     config.debug && console.error('Node stderr: ' + x) // eslint-disable-line
     x.includes('Debugger listening on ws://127.0.0.1:' + config.nodePort)
       ? ws = connect(x.slice(22).split('\n')[0].trim())
+      : x.includes('Debugger ending on ws://')
+      ? null
       : x.includes('Waiting for the debugger to disconnect...')
       ? ws && (closeTimer = setTimeout(() => ws.close(), 200))
       : x.trim() !== 'Debugger attached.'
@@ -154,16 +178,19 @@ async function start() {
       : null
   })
 
-  config.script || node.on('message', x => {
+  config.script || child.on('message', x => {
     x.startsWith('started:')
       ? resolve(x.slice(8) === 'true')
       : x.startsWith('watch:') && api.browser.watch(fs.realpathSync(x.slice(6)))
   })
 
-  node.on('close', async(code, signal) => {
-    ws && ws.close()
+  child.on('close', async(code, signal) => {
+    if (node === child) {
+      ws && ws.close()
+      ws = null
+      node = null
+    }
     clearTimeout(closeTimer)
-    ws = node = null
 
     exit.exiting || api.log({
       replace: 'nodeend',
