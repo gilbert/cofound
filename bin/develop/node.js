@@ -20,6 +20,7 @@ let node
   , scripts = new Map()
   , startPerf
   , closed
+  , restarting = false
 
 export const closing = new Promise(r => closed = r)
 
@@ -74,10 +75,15 @@ async function hotload(x) {
 }
 
 async function restart(x) {
-  api.log({ replace: 'nodeend', from: 'node', type: 'status', value: '🔄' })
-  await close()
-  await tryStart()
-  x === 'reload' && setTimeout(() => api.browser.reload(), 200)
+  restarting = true
+  try {
+    api.log({ replace: 'nodeend', from: 'node', type: 'status', value: '🔄' })
+    await close()
+    await tryStart()
+    x === 'reload' && setTimeout(() => api.browser.reload(), 200)
+  } finally {
+    restarting = false
+  }
 }
 
 async function tryStart() {
@@ -100,7 +106,13 @@ async function close() {
     const { result } = await ws.request('Profiler.takePreciseCoverage')
     console.log('Node Coverage', await coverage(result)) // eslint-disable-line
   }
-  node && (node.kill(), node.connected && await new Promise(r => node.on('close', r)))
+  if (!node)
+    return
+
+  const child = node
+  const closed = new Promise(r => child.once('close', r))
+  child.kill()
+  await closed
 }
 
 async function start() {
@@ -162,6 +174,13 @@ async function start() {
         ? '💥 (' + code + ')'
         : '🏁'
     })
+
+    if (!exit.exiting && !restarting) {
+      process.exitCode = code || 1
+      exit('SIGTERM')
+      return
+    }
+
     code
       ? reject('Exited with code: ' + code + (signal ? 'on ' + signal : ''))
       : resolve()
