@@ -56,6 +56,21 @@ export function parseSelect(sql) {
   return parser.parseSelect()
 }
 
+export function enforceLimit(sql, parsed, options = {}) {
+  const { maxLimit = 1000, defaultLimit = 100 } = options
+
+  if (!parsed.limit) {
+    return sql.trimEnd() + ' LIMIT ' + defaultLimit
+  }
+
+  if (parsed.limit.type === 'number' && parsed.limit.value > maxLimit) {
+    const { pos, raw } = parsed.limit
+    return sql.slice(0, pos) + String(maxLimit) + sql.slice(pos + raw.length)
+  }
+
+  return sql
+}
+
 export function tokenize(sql) {
   if (typeof sql !== 'string') throw new SqlParseError('SQL must be a string')
 
@@ -142,6 +157,8 @@ class Parser {
     this.scope = new Map()
     this.params = new Set()
     this.columnRefs = []
+    this.limit = null
+    this.offset = null
   }
 
   parseSelect() {
@@ -166,6 +183,8 @@ class Parser {
       tables: this.tables,
       aliases: this.aliases,
       params: this.params,
+      limit: this.limit,
+      offset: this.offset,
     }
   }
 
@@ -240,9 +259,15 @@ class Parser {
     const tok = this.peek()
     if (this.match('param')) {
       this.params.add(tok.value)
+      const field = label === 'LIMIT' ? 'limit' : 'offset'
+      this[field] = { type: 'param', value: tok.value, pos: tok.pos }
       return
     }
-    if (this.match('number')) return
+    if (this.match('number')) {
+      const field = label === 'LIMIT' ? 'limit' : 'offset'
+      this[field] = { type: 'number', value: Number(tok.value), pos: tok.pos, raw: tok.value }
+      return
+    }
     throw new SqlParseError('Expected number or named parameter after ' + label, tok.pos)
   }
 

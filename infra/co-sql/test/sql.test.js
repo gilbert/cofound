@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { SqlParseError, parseSelect, tokenize } from '../index.js'
+import { SqlParseError, parseSelect, enforceLimit, tokenize } from '../index.js'
 
 function parsed(sql) {
   const result = parseSelect(sql)
@@ -116,4 +116,74 @@ test('rejects unknown aliases and duplicate aliases', () => {
 
 test('rejects reserved auth parameter prefix', () => {
   rejects('SELECT * FROM tasks WHERE org_id = @__auth_0', /reserved/)
+})
+
+// ---------------------------------------------------------------------------
+// limit / offset fields
+// ---------------------------------------------------------------------------
+
+test('parseSelect returns null limit/offset when absent', () => {
+  const result = parseSelect('SELECT * FROM tasks')
+  assert.equal(result.limit, null)
+  assert.equal(result.offset, null)
+})
+
+test('parseSelect returns numeric limit and offset', () => {
+  const result = parseSelect('SELECT * FROM tasks LIMIT 50 OFFSET 10')
+  assert.deepEqual(result.limit, { type: 'number', value: 50, pos: result.limit.pos, raw: '50' })
+  assert.deepEqual(result.offset, { type: 'number', value: 10, pos: result.offset.pos, raw: '10' })
+})
+
+test('parseSelect returns param limit', () => {
+  const result = parseSelect('SELECT * FROM tasks LIMIT @n')
+  assert.equal(result.limit.type, 'param')
+  assert.equal(result.limit.value, 'n')
+})
+
+test('parseSelect returns param offset with numeric limit', () => {
+  const result = parseSelect('SELECT * FROM tasks LIMIT 100 OFFSET @off')
+  assert.equal(result.limit.type, 'number')
+  assert.equal(result.limit.value, 100)
+  assert.equal(result.offset.type, 'param')
+  assert.equal(result.offset.value, 'off')
+})
+
+// ---------------------------------------------------------------------------
+// enforceLimit
+// ---------------------------------------------------------------------------
+
+test('enforceLimit appends default LIMIT when absent', () => {
+  const sql = 'SELECT * FROM tasks'
+  const result = enforceLimit(sql, parseSelect(sql))
+  assert.equal(result, 'SELECT * FROM tasks LIMIT 100')
+})
+
+test('enforceLimit appends custom defaultLimit', () => {
+  const sql = 'SELECT * FROM tasks'
+  const result = enforceLimit(sql, parseSelect(sql), { defaultLimit: 50 })
+  assert.equal(result, 'SELECT * FROM tasks LIMIT 50')
+})
+
+test('enforceLimit caps numeric LIMIT above maxLimit', () => {
+  const sql = 'SELECT * FROM tasks LIMIT 5000'
+  const result = enforceLimit(sql, parseSelect(sql), { maxLimit: 1000 })
+  assert.equal(result, 'SELECT * FROM tasks LIMIT 1000')
+})
+
+test('enforceLimit leaves numeric LIMIT within maxLimit unchanged', () => {
+  const sql = 'SELECT * FROM tasks LIMIT 50'
+  const result = enforceLimit(sql, parseSelect(sql))
+  assert.equal(result, sql)
+})
+
+test('enforceLimit leaves param LIMIT unchanged', () => {
+  const sql = 'SELECT * FROM tasks LIMIT @n'
+  const result = enforceLimit(sql, parseSelect(sql))
+  assert.equal(result, sql)
+})
+
+test('enforceLimit preserves trailing OFFSET when capping', () => {
+  const sql = 'SELECT * FROM tasks LIMIT 9999 OFFSET 20'
+  const result = enforceLimit(sql, parseSelect(sql), { maxLimit: 500 })
+  assert.equal(result, 'SELECT * FROM tasks LIMIT 500 OFFSET 20')
 })

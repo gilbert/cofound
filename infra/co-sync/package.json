@@ -1,0 +1,16 @@
+{
+  "name": "co-sync",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./server.js": "./server.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "cofound": "file:../../pkg",
+    "co-sql": "file:../co-sql",
+    "co-util": "file:../co-util"
+  }
+}
