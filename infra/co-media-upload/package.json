@@ -1,0 +1,10 @@
+{
+  "name": "co-media-upload",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
