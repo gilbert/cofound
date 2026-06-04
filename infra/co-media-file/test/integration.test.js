@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { access, mkdir, mkdtemp } from 'node:fs/promises'
-import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
+import { Writable } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { probe } from '../../co-media-probe/index.js'
@@ -102,38 +102,58 @@ function ffmpeg(args) {
 }
 
 async function requestRange(file, range) {
-  const server = http.createServer((req, res) => {
-    serveRange(req, res, file).catch(err => {
-      res.writeHead(500)
-      res.end(err.message)
-    })
-  })
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  const port = server.address().port
-
-  try {
-    return await new Promise((resolve, reject) => {
-      const req = http.request({
-        hostname: '127.0.0.1',
-        port,
-        path: '/',
-        agent: false,
-        headers: { Range: range },
-      }, res => {
-        const chunks = []
-        res.on('data', chunk => chunks.push(chunk))
-        res.on('end', () => {
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            body: Buffer.concat(chunks),
-          })
-        })
-      })
-      req.on('error', reject)
-      req.end()
-    })
-  } finally {
-    await new Promise(resolve => server.close(resolve))
+  const r = cofoundRangeRequest({ Range: range })
+  await serveRange(r, file)
+  return {
+    status: r.statusCode,
+    headers: r.responseHeaders,
+    body: Buffer.concat(r.chunks),
   }
+}
+
+function cofoundRangeRequest(headers = {}) {
+  const r = {
+    method: 'get',
+    headers: lowerHeaders(headers),
+    chunks: [],
+    statusCode: null,
+    responseHeaders: {},
+    writable: new Writable({
+      write(chunk, encoding, callback) {
+        r.chunks.push(Buffer.from(chunk))
+        callback()
+      },
+    }),
+    status(status) {
+      this.statusCode = status
+      return this
+    },
+    header(h, v, x) {
+      if (typeof h === 'number') {
+        this.status(h)
+        h = v
+        v = x
+      }
+      if (typeof h === 'object') {
+        Object.entries(h).forEach(([name, value]) => this.header(name, value))
+      } else if (v != null) {
+        this.responseHeaders[h.toLowerCase()] = String(v)
+      }
+      return this
+    },
+    end(body = '', status, headers) {
+      if (typeof status === 'object') {
+        headers = status
+        status = null
+      }
+      if (status) this.status(status)
+      if (headers) this.header(headers)
+      if (body) this.chunks.push(Buffer.from(body))
+    },
+  }
+  return r
+}
+
+function lowerHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]))
 }

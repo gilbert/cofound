@@ -70,48 +70,47 @@ export async function* scanMediaFiles(root, options = {}) {
   yield* scanDirectory(path.resolve(root), options, ignore)
 }
 
-export async function serveRange(req, res, file, options = {}) {
+export async function serveRange(r, file, options = {}) {
   const info = await stat(file)
   const size = info.size
   const type = options.type || MIME_TYPES.get(path.extname(file).toLowerCase()) || 'application/octet-stream'
-  const range = parseRange(req.headers.range, size)
+  const range = parseRange(r.headers.range, size)
 
   if (range === false) {
-    res.writeHead(416, {
+    r.end('', 416, {
       'Accept-Ranges': 'bytes',
       'Content-Range': `bytes */${size}`,
       'Content-Length': 0,
     })
-    res.end()
     return
   }
 
   if (!range) {
-    res.writeHead(200, {
+    r.header(200, {
       'Accept-Ranges': 'bytes',
       'Content-Type': type,
       'Content-Length': size,
     })
-    if (req.method === 'HEAD') {
-      res.end()
+    if (r.method === 'head') {
+      r.end()
       return
     }
-    await pipeFile(file, res)
+    await pipeFile(file, r)
     return
   }
 
   const { start, end } = range
-  res.writeHead(206, {
+  r.header(206, {
     'Accept-Ranges': 'bytes',
     'Content-Type': type,
     'Content-Range': `bytes ${start}-${end}/${size}`,
     'Content-Length': end - start + 1,
   })
-  if (req.method === 'HEAD') {
-    res.end()
+  if (r.method === 'head') {
+    r.end()
     return
   }
-  await pipeFile(file, res, { start, end })
+  await pipeFile(file, r, { start, end })
 }
 
 async function* scanDirectory(dir, options, ignore) {
@@ -191,13 +190,13 @@ function parseRange(header, size) {
   return { start, end }
 }
 
-function pipeFile(file, res, options) {
+function pipeFile(file, r, options) {
   return new Promise((resolve, reject) => {
     const stream = createReadStream(file, options)
     stream.on('error', reject)
-    res.on('error', reject)
-    res.on('finish', resolve)
-    stream.pipe(res)
+    r.writable.on('error', reject)
+    r.writable.on('finish', resolve)
+    stream.pipe(r.writable)
   })
 }
 

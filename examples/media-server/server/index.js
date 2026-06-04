@@ -17,7 +17,6 @@ export default function mediaServer(app) {
   })
 
   app.get('/files/:name', async r => {
-    if (r.method === 'head') return headUploadedFile(r, r.params.name)
     await serveUploadedFile(r, r.params.name)
   })
 
@@ -29,7 +28,7 @@ export default function mediaServer(app) {
 }
 
 async function uploadRoute(r) {
-  await handleUpload(uploadReq(r), uploadRes(r), {
+  await handleUpload(r, {
     prefix: '/upload',
     dir: UPLOAD_DIR,
     maxSize: MAX_UPLOAD_SIZE,
@@ -48,24 +47,7 @@ async function serveUploadedFile(r, name) {
   if (!safe) return r.statusEnd(404)
 
   try {
-    await serveRange(rangeReq(r), rangeRes(r), safe, { type: contentType(safe) })
-  } catch (err) {
-    if (err.code === 'ENOENT') return r.statusEnd(404)
-    throw err
-  }
-}
-
-async function headUploadedFile(r, name) {
-  const safe = safeUploadedPath(name)
-  if (!safe) return r.statusEnd(404)
-
-  try {
-    const info = await stat(safe)
-    r.end('', 200, {
-      'Accept-Ranges': 'bytes',
-      'Content-Type': contentType(safe),
-      'Content-Length': info.size,
-    })
+    await serveRange(r, safe, { type: contentType(safe) })
   } catch (err) {
     if (err.code === 'ENOENT') return r.statusEnd(404)
     throw err
@@ -90,55 +72,6 @@ async function listFiles() {
   }
   files.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.name.localeCompare(b.name))
   return files
-}
-
-function uploadReq(r) {
-  const req = r.readable
-  req.method = r.method.toUpperCase()
-  req.url = r.url + (r.rawQuery ? '?' + r.rawQuery : '')
-  req.headers = r.headers
-  return req
-}
-
-function uploadRes(r) {
-  const headers = {}
-  let wrote = false
-
-  return {
-    setHeader(name, value) {
-      headers[name] = value
-    },
-    writeHead(status, extra = {}) {
-      r.handled = true
-      wrote = true
-      r.status(status)
-      r.header({ ...headers, ...extra })
-      return this
-    },
-    end(body = '') {
-      r.handled = true
-      if (!wrote) r.header(headers)
-      r.end(body)
-    },
-  }
-}
-
-function rangeReq(r) {
-  return {
-    method: r.method.toUpperCase(),
-    headers: r.headers,
-  }
-}
-
-function rangeRes(r) {
-  const res = r.writable
-  res.writeHead = (status, headers = {}) => {
-    r.handled = true
-    r.status(status)
-    r.header(headers)
-    return res
-  }
-  return res
 }
 
 async function uniqueFilename(name) {
