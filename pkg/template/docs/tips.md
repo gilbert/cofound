@@ -24,7 +24,61 @@
 - Set `e.redraw = false` to suppress the automatic redraw for events where you want to control the timing yourself.
 - cofound uses event delegation via vdom — checking `element.onclick` in the DOM will return `false` even when handlers are properly attached.
 
+## Backend Links Need `target: '_self'`
+- For any `s\`a\`({ href: "/my/route" }, ...)` tag, cofound automatically hooks it into `history.pushState` routing.
+- If you do not want frontend routing, such as hitting a backend route like `/oauth/github`, downloading a file, opening uploaded media, or viewing a JSON endpoint, add `target: '_self'`.
+
+```js
+s`a`({
+  href: '/files/video.mp4',
+  target: '_self'
+}, 'video.mp4')
+```
+
 ## Template Literal Interpolation
 - Cofound uses CSS custom properties (`--var`) for template literal interpolations. The interpolated expression becomes the value of the custom property.
 - **Units must be inside the interpolation**, not outside. `top ${val}px` produces `top: var(--xxx)px` which is invalid CSS. Use `top ${val + 'px'}` so the custom property value is `33px` and the rule becomes `top: var(--xxx)` → `top: 33px`.
 - Each unique set of interpolated values generates a new CSS class. This is fine for typical use.
+
+## Styled Overrides, Not CSS Fragment Interpolation
+- `s\`...\`` interpolation is not general string concatenation. Cofound parses the raw template string as CSS once, then stores interpolated values as CSS custom properties or selector attribute toggles.
+- This is correct for values: `s\`w ${width + 'px'}; c ${color}\``.
+- It is **not** correct for injecting declarations, shorthands, selectors, or layout fragments: `s\`${layout}; font-size 12px\`` does not make Cofound parse `layout` as CSS syntax.
+- The idiomatic way to share a base style and extend it is a styled component override:
+
+```js
+// Bad: the fragment is treated as an interpolated value, not parsed CSS.
+function fileHead(label, layout) {
+  return s`
+    ${layout}
+    font-size 12px
+  `(label)
+}
+
+// Good: FileHead is a styled component, and the override is
+// its own tagged template, so Cofound parses it as CSS.
+const FileHead = s`span
+  font-size 12px
+  text-transform uppercase
+`
+
+FileHead`
+  w 110px
+`('Size')
+```
+
+- If the override adds styles only, start it with whitespace/newline as above. A leading token before whitespace is parsed as the element/tag selector:
+
+```js
+FileHead`
+  w 110px
+`('Size')       // style override
+
+FileHead`span
+  w 110px
+`('Size')       // explicit tag + style override
+
+FileHead`w 110px`('Size') // wrong: `w` is parsed as a tag name
+```
+
+- For genuinely dynamic property values, keep using interpolation: `FileHead\`w ${width + 'px'}\``.

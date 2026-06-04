@@ -1,0 +1,14 @@
+{
+  "name": "media-server-example",
+  "type": "module",
+  "scripts": {
+    "dev": "cofound dev --port 7357",
+    "start": "cofound start --port 7357",
+    "build": "cofound build"
+  },
+  "dependencies": {
+    "cofound": "file:../../pkg",
+    "co-media-file": "file:../../infra/co-media-file",
+    "co-media-upload": "file:../../infra/co-media-upload"
+  }
+}
