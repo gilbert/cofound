@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { mkdtemp, readFile, stat } from 'node:fs/promises'
-import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import test from 'node:test'
 import {
   decodeMetadata,
@@ -191,8 +191,10 @@ test('uploadFile creates, resumes by HEAD, patches chunks, and clears storage', 
     onComplete: info => completed.push(info),
   })
   const storage = memoryStorage()
+  const fetch = globalThis.fetch
 
   try {
+    globalThis.fetch = uploadFetch(server)
     const file = new File(['abcdef'], 'client.txt', { lastModified: 123 })
     const progress = []
     const upload = uploadFile(file, {
@@ -214,6 +216,7 @@ test('uploadFile creates, resumes by HEAD, patches chunks, and clears storage', 
     assert.equal(completed.length, 1)
     assert.equal(await readFile(path.join(server.dir, 'client.bin'), 'utf8'), 'abcdef')
   } finally {
+    globalThis.fetch = fetch
     await server.close()
   }
 })
@@ -227,50 +230,110 @@ function patchHeaders(offset, length) {
   }
 }
 
+function cofoundUploadRequest(method, url, headers = {}, body = '') {
+  const parsed = new URL(url, 'http://local')
+  return {
+    method: method.toLowerCase(),
+    url: parsed.pathname,
+    rawQuery: parsed.search.slice(1),
+    headers: lowerHeaders(headers),
+    readable: Readable.from(body ? [body] : []),
+    statusCode: null,
+    responseHeaders: {},
+    responseBody: '',
+    status(status) {
+      this.statusCode = status
+      return this
+    },
+    header(h, v, x) {
+      if (typeof h === 'number') {
+        this.status(h)
+        h = v
+        v = x
+      }
+      if (typeof h === 'object') {
+        Object.entries(h).forEach(([name, value]) => this.header(name, value))
+      } else if (v != null) {
+        this.responseHeaders[h.toLowerCase()] = String(v)
+      }
+      return this
+    },
+    end(body = '', status, headers) {
+      if (typeof status === 'object') {
+        headers = status
+        status = null
+      }
+      if (status) this.status(status)
+      if (headers) this.header(headers)
+      this.responseBody = String(body)
+    },
+  }
+}
+
+function lowerHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]))
+}
+
 async function uploadTestServer(options = {}) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'co-media-upload-'))
-  const nodeServer = http.createServer((req, res) => {
-    handleUpload(req, res, {
-      dir,
-      prefix: '/upload',
-      ttl: 60 * 60 * 1000,
-      ...options,
-    })
-  })
-  await new Promise(resolve => nodeServer.listen(0, '127.0.0.1', resolve))
-  const port = nodeServer.address().port
+  const uploadOptions = {
+    dir,
+    prefix: '/upload',
+    ttl: 60 * 60 * 1000,
+    ...options,
+  }
   return {
     dir,
     url(pathname) {
-      return `http://127.0.0.1:${port}${pathname}`
+      return pathname
+    },
+    async request(method, pathname, options = {}) {
+      const r = cofoundUploadRequest(method, pathname, options.headers || {}, options.body || '')
+      await handleUpload(r, uploadOptions)
+      return {
+        status: r.statusCode,
+        headers: r.responseHeaders,
+        body: r.responseBody,
+      }
     },
     close() {
-      return new Promise(resolve => nodeServer.close(resolve))
+      return Promise.resolve()
     },
   }
 }
 
 function request(server, method, pathname, options = {}) {
-  return new Promise((resolve, reject) => {
-    const body = options.body || ''
-    const req = http.request(server.url(pathname), {
-      method,
-      headers: options.headers || {},
-      agent: false,
-    }, res => {
-      const chunks = []
-      res.on('data', chunk => chunks.push(chunk))
-      res.on('end', () => {
-        resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          body: Buffer.concat(chunks).toString('utf8'),
-        })
-      })
+  return server.request(method, pathname, options)
+}
+
+function uploadFetch(server) {
+  return async(url, options = {}) => {
+    const body = options.body ? await bodyBuffer(options.body) : ''
+    const res = await request(server, options.method || 'GET', new URL(url, 'http://local').pathname, {
+      headers: options.headers,
+      body,
     })
-    req.on('error', reject)
-    req.end(body)
-  })
+    return {
+      status: res.status,
+      ok: res.status >= 200 && res.status < 300,
+      headers: {
+        get(name) {
+          return res.headers[name.toLowerCase()] || null
+        },
+      },
+      text() {
+        return Promise.resolve(res.body)
+      },
+    }
+  }
+}
+
+async function bodyBuffer(body) {
+  if (body == null) return ''
+  if (typeof body === 'string' || Buffer.isBuffer(body)) return body
+  if (body instanceof Uint8Array) return Buffer.from(body)
+  if (typeof body.arrayBuffer === 'function') return Buffer.from(await body.arrayBuffer())
+  throw new Error('Unsupported test body')
 }
 
 function memoryStorage() {

@@ -22,35 +22,19 @@ export class UploadError extends Error {
 export function uploadServer(app, options = {}) {
   const prefix = normalizePrefix(options.prefix || DEFAULT_UPLOAD_PREFIX)
 
-  if (typeof app.options === 'function') {
-    app.options(prefix, r => handleCofoundRequest(r, options))
-  }
-  if (typeof app.post === 'function') {
-    app.post(prefix, r => handleCofoundRequest(r, options))
-  }
-  if (typeof app.head === 'function') {
-    app.head(prefix + '/:id', r => handleCofoundRequest(r, options))
-  }
-  if (typeof app.patch === 'function') {
-    app.patch(prefix + '/:id', r => handleCofoundRequest(r, options))
-  }
-  if (typeof app.delete === 'function') {
-    app.delete(prefix + '/:id', r => handleCofoundRequest(r, options))
-  }
-
-  return {
-    handle(req, res) {
-      return handleUpload(req, res, { ...options, prefix })
-    },
-  }
+  app.options(prefix, r => handleUpload(r, options))
+  app.post(prefix, r => handleUpload(r, options))
+  app.head(prefix + '/:id', r => handleUpload(r, options))
+  app.patch(prefix + '/:id', r => handleUpload(r, options))
+  app.delete(prefix + '/:id', r => handleUpload(r, options))
 }
 
-export async function handleUpload(req, res, options = {}) {
+export async function handleUpload(r, options = {}) {
   const config = normalizeOptions(options)
   try {
-    await routeRequest(req, res, config)
+    await routeRequest(r, config)
   } catch (err) {
-    sendError(res, err)
+    sendError(r, err)
   }
 }
 
@@ -198,24 +182,24 @@ export function decodeMetadata(value = '') {
   return metadata
 }
 
-async function routeRequest(req, res, config) {
-  setTusHeaders(res)
+async function routeRequest(r, config) {
+  r.header('Tus-Resumable', TUS_VERSION)
 
-  const { base, id } = matchPath(req.url, config.prefix)
+  const { base, id } = matchPath(requestUrl(r), config.prefix)
   if (!base) throw new UploadError('Not found', 404)
-  if (req.method !== 'OPTIONS') assertTusVersion(req)
+  if (r.method !== 'options') assertTusVersion(r)
 
-  if (req.method === 'OPTIONS' && !id) return optionsResponse(res, config)
-  if (req.method === 'POST' && !id) return createUploadResource(req, res, config)
-  if (req.method === 'HEAD' && id) return headUpload(res, config, id)
-  if (req.method === 'PATCH' && id) return patchUpload(req, res, config, id)
-  if (req.method === 'DELETE' && id) return deleteUpload(res, config, id)
+  if (r.method === 'options' && !id) return optionsResponse(r, config)
+  if (r.method === 'post' && !id) return createUploadResource(r, config)
+  if (r.method === 'head' && id) return headUpload(r, config, id)
+  if (r.method === 'patch' && id) return patchUpload(r, config, id)
+  if (r.method === 'delete' && id) return deleteUpload(r, config, id)
 
   throw new UploadError('Method not allowed', 405)
 }
 
-async function createUploadResource(req, res, config) {
-  const length = parseLength(req.headers['upload-length'])
+async function createUploadResource(r, config) {
+  const length = parseLength(r.headers['upload-length'])
   if (length == null) throw new UploadError('Upload-Length is required', 400)
   if (config.maxSize != null && length > config.maxSize) {
     throw new UploadError('Upload exceeds Tus-Max-Size', 413)
@@ -229,7 +213,7 @@ async function createUploadResource(req, res, config) {
     id,
     length,
     offset: 0,
-    metadata: decodeMetadata(req.headers['upload-metadata']),
+    metadata: decodeMetadata(r.headers['upload-metadata']),
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     expiresAt: config.ttl ? new Date(now.getTime() + config.ttl).toUTCString() : null,
@@ -246,11 +230,10 @@ async function createUploadResource(req, res, config) {
     'Upload-Offset': '0',
   }
   if (record.expiresAt) headers['Upload-Expires'] = record.expiresAt
-  writeHead(res, 201, headers)
-  res.end()
+  r.end('', 201, headers)
 }
 
-async function headUpload(res, config, id) {
+async function headUpload(r, config, id) {
   const record = await loadLiveRecord(config, id)
   const headers = {
     'Upload-Offset': String(record.offset),
@@ -259,28 +242,27 @@ async function headUpload(res, config, id) {
   }
   if (record.expiresAt && !record.complete) headers['Upload-Expires'] = record.expiresAt
   if (Object.keys(record.metadata || {}).length) headers['Upload-Metadata'] = encodeMetadata(record.metadata)
-  writeHead(res, 200, headers)
-  res.end()
+  r.end('', 200, headers)
 }
 
-async function patchUpload(req, res, config, id) {
-  if (req.headers['content-type'] !== 'application/offset+octet-stream') {
+async function patchUpload(r, config, id) {
+  if (r.headers['content-type'] !== 'application/offset+octet-stream') {
     throw new UploadError('PATCH requires Content-Type: application/offset+octet-stream', 415)
   }
 
   const record = await loadLiveRecord(config, id)
   if (record.complete) throw new UploadError('Upload is already complete', 409)
 
-  const offset = parseLength(req.headers['upload-offset'])
+  const offset = parseLength(r.headers['upload-offset'])
   if (offset == null) throw new UploadError('Upload-Offset is required', 400)
   if (offset !== record.offset) throw new UploadError('Upload-Offset does not match', 409)
 
-  const contentLength = req.headers['content-length'] == null ? null : parseLength(req.headers['content-length'])
+  const contentLength = r.headers['content-length'] == null ? null : parseLength(r.headers['content-length'])
   if (contentLength != null && offset + contentLength > record.length) {
     throw new UploadError('PATCH exceeds Upload-Length', 413)
   }
 
-  await appendRequest(paths(config, id).bin, req)
+  await appendRequest(paths(config, id).bin, r)
 
   const size = (await stat(paths(config, id).bin)).size
   if (size > record.length) throw new UploadError('Upload exceeds Upload-Length', 413)
@@ -306,26 +288,23 @@ async function patchUpload(req, res, config, id) {
 
   const headers = { 'Upload-Offset': String(record.offset) }
   if (record.expiresAt && !record.complete) headers['Upload-Expires'] = record.expiresAt
-  writeHead(res, 204, headers)
-  res.end()
+  r.end('', 204, headers)
 }
 
-async function deleteUpload(res, config, id) {
+async function deleteUpload(r, config, id) {
   const p = paths(config, id)
   await rm(p.bin, { force: true })
   await rm(p.json, { force: true })
-  writeHead(res, 204)
-  res.end()
+  r.end('', 204)
 }
 
-function optionsResponse(res, config) {
+function optionsResponse(r, config) {
   const headers = {
     'Tus-Version': TUS_VERSION,
     'Tus-Extension': TUS_EXTENSIONS,
   }
   if (config.maxSize != null) headers['Tus-Max-Size'] = String(config.maxSize)
-  writeHead(res, 204, headers)
-  res.end()
+  r.end('', 204, headers)
 }
 
 async function loadLiveRecord(config, id) {
@@ -360,8 +339,8 @@ async function deleteRecord(config, id) {
   await rm(p.json, { force: true })
 }
 
-async function appendRequest(file, req) {
-  await pipeline(req, createWriteStream(file, { flags: 'a' }))
+async function appendRequest(file, r) {
+  await pipeline(r.readable, createWriteStream(file, { flags: 'a' }))
 }
 
 function normalizeOptions(options) {
@@ -393,8 +372,8 @@ function paths(config, id) {
   }
 }
 
-function assertTusVersion(req) {
-  if (req.headers['tus-resumable'] !== TUS_VERSION) {
+function assertTusVersion(r) {
+  if (r.headers['tus-resumable'] !== TUS_VERSION) {
     throw new UploadError('Tus-Resumable header is required', 412)
   }
 }
@@ -406,23 +385,9 @@ function parseLength(value) {
   return number
 }
 
-function sendError(res, err) {
+function sendError(r, err) {
   const status = err instanceof UploadError ? err.status : 500
-  writeHead(res, status, { 'Content-Type': 'text/plain; charset=utf-8' })
-  res.end(err.message || 'Upload error')
-}
-
-function writeHead(res, status, headers = {}) {
-  res.writeHead(status, {
-    'Tus-Resumable': TUS_VERSION,
-    ...headers,
-  })
-}
-
-function setTusHeaders(res) {
-  if (typeof res.setHeader === 'function') {
-    res.setHeader('Tus-Resumable', TUS_VERSION)
-  }
+  r.end(err.message || 'Upload error', status, { 'Content-Type': 'text/plain; charset=utf-8' })
 }
 
 function randomId() {
@@ -467,6 +432,6 @@ function base64Decode(value) {
   return Buffer.from(value, 'base64').toString('utf8')
 }
 
-async function handleCofoundRequest(r, options) {
-  return handleUpload(r.req || r.request, r.res || r.response, options)
+function requestUrl(r) {
+  return r.rawQuery ? r.url + '?' + r.rawQuery : r.url
 }

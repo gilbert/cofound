@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
-import http from 'node:http'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { Writable } from 'node:stream'
 import test from 'node:test'
 import {
   isMediaFile,
@@ -93,7 +93,7 @@ test('serveRange returns a full response without Range', async () => {
   const file = path.join(dir, 'clip.mp4')
   await writeFile(file, '0123456789')
 
-  const result = await withServer(file)
+  const result = await withRange(file)
 
   assert.equal(result.status, 200)
   assert.equal(result.headers['accept-ranges'], 'bytes')
@@ -107,7 +107,7 @@ test('serveRange returns a valid single range', async () => {
   const file = path.join(dir, 'clip.mp4')
   await writeFile(file, '0123456789')
 
-  const result = await withServer(file, { Range: 'bytes=2-5' })
+  const result = await withRange(file, { Range: 'bytes=2-5' })
 
   assert.equal(result.status, 206)
   assert.equal(result.headers['content-range'], 'bytes 2-5/10')
@@ -120,7 +120,7 @@ test('serveRange returns a suffix range', async () => {
   const file = path.join(dir, 'clip.mp4')
   await writeFile(file, '0123456789')
 
-  const result = await withServer(file, { Range: 'bytes=-4' })
+  const result = await withRange(file, { Range: 'bytes=-4' })
 
   assert.equal(result.status, 206)
   assert.equal(result.headers['content-range'], 'bytes 6-9/10')
@@ -132,45 +132,84 @@ test('serveRange rejects invalid and unsatisfiable ranges', async () => {
   const file = path.join(dir, 'clip.mp4')
   await writeFile(file, '0123456789')
 
-  const invalid = await withServer(file, { Range: 'bytes=8-2' })
+  const invalid = await withRange(file, { Range: 'bytes=8-2' })
   assert.equal(invalid.status, 416)
   assert.equal(invalid.headers['content-range'], 'bytes */10')
 
-  const unsatisfiable = await withServer(file, { Range: 'bytes=100-200' })
+  const unsatisfiable = await withRange(file, { Range: 'bytes=100-200' })
   assert.equal(unsatisfiable.status, 416)
   assert.equal(unsatisfiable.headers['content-range'], 'bytes */10')
 })
 
-async function withServer(file, headers = {}) {
-  const server = http.createServer((req, res) => {
-    serveRange(req, res, file).catch(err => {
-      res.writeHead(500)
-      res.end(err.message)
-    })
-  })
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
-  const port = server.address().port
-  try {
-    return await request({ port, headers })
-  } finally {
-    await new Promise(resolve => server.close(resolve))
+test('serveRange handles Cofound HEAD requests without a body', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'co-media-range-'))
+  const file = path.join(dir, 'clip.mp4')
+  await writeFile(file, '0123456789')
+
+  const r = cofoundRangeRequest({ method: 'head' })
+  await serveRange(r, file)
+
+  assert.equal(r.statusCode, 200)
+  assert.equal(r.responseHeaders['content-length'], '10')
+  assert.equal(r.body(), '')
+})
+
+async function withRange(file, headers = {}) {
+  const r = cofoundRangeRequest({ headers })
+  await serveRange(r, file)
+  return {
+    status: r.statusCode,
+    headers: r.responseHeaders,
+    body: r.body(),
   }
 }
 
-function request({ port, headers = {} }) {
-  return new Promise((resolve, reject) => {
-    const req = http.request({ hostname: '127.0.0.1', port, path: '/', headers, agent: false }, res => {
-      const chunks = []
-      res.on('data', chunk => chunks.push(chunk))
-      res.on('end', () => {
-        resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          body: Buffer.concat(chunks).toString('utf8'),
-        })
-      })
-    })
-    req.on('error', reject)
-    req.end()
-  })
+function cofoundRangeRequest({ method = 'get', headers = {} } = {}) {
+  const chunks = []
+  const r = {
+    method,
+    headers: lowerHeaders(headers),
+    statusCode: null,
+    responseHeaders: {},
+    writable: new Writable({
+      write(chunk, encoding, callback) {
+        chunks.push(Buffer.from(chunk))
+        callback()
+      },
+    }),
+    body() {
+      return Buffer.concat(chunks).toString('utf8') + (this.responseBody || '')
+    },
+    status(status) {
+      this.statusCode = status
+      return this
+    },
+    header(h, v, x) {
+      if (typeof h === 'number') {
+        this.status(h)
+        h = v
+        v = x
+      }
+      if (typeof h === 'object') {
+        Object.entries(h).forEach(([name, value]) => this.header(name, value))
+      } else if (v != null) {
+        this.responseHeaders[h.toLowerCase()] = String(v)
+      }
+      return this
+    },
+    end(body = '', status, headers) {
+      if (typeof status === 'object') {
+        headers = status
+        status = null
+      }
+      if (status) this.status(status)
+      if (headers) this.header(headers)
+      this.responseBody = String(body)
+    },
+  }
+  return r
+}
+
+function lowerHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]))
 }

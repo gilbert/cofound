@@ -20,22 +20,26 @@ import {
 
 The default upload prefix, temp directory, upload TTL, and browser chunk size are exported at the top of `index.js` so vendored copies can change environment-specific defaults in one obvious place.
 
-## Plain Node Handler
+## Cofound Handler
 
 ```js
-import http from 'node:http'
 import { handleUpload } from 'co-media-upload'
 
-http.createServer((req, res) => {
-  handleUpload(req, res, {
-    prefix: DEFAULT_UPLOAD_PREFIX,
-    dir: DEFAULT_UPLOAD_DIR,
-    maxSize: 100 * 1024 * 1024 * 1024,
-    onComplete({ id, path, metadata }) {
-      // Move the temp file into the library and scan it.
-    },
-  })
-}).listen(3000)
+const uploadOptions = {
+  dir: DEFAULT_UPLOAD_DIR,
+  maxSize: 100 * 1024 * 1024 * 1024,
+  onComplete({ id, path, metadata }) {
+    // Move the temp file into the library and scan it.
+  },
+}
+
+export default function(app) {
+  app.options('/upload', r => handleUpload(r, uploadOptions))
+  app.post('/upload', r => handleUpload(r, uploadOptions))
+  app.head('/upload/:id', r => handleUpload(r, uploadOptions))
+  app.patch('/upload/:id', r => handleUpload(r, uploadOptions))
+  app.delete('/upload/:id', r => handleUpload(r, uploadOptions))
+}
 ```
 
 ## App Adapter
@@ -48,7 +52,7 @@ uploadServer(app, {
 })
 ```
 
-`uploadServer()` mounts the route methods when the app exposes `options`, `post`, `head`, `patch`, and `delete`. It also returns `{ handle }` for direct Node-style use.
+`uploadServer()` mounts the route methods on a Cofound app.
 
 ## Browser Helper
 
@@ -132,7 +136,6 @@ The JSON record contains:
 - `onComplete` is called after the upload is marked complete; if the hook throws, the client receives an error and app-level recovery is required.
 - No authentication, authorization, quota, virus scanning, or destination policy.
 - No CORS headers are set.
-- The app adapter is intentionally small and assumes route handlers expose raw Node `req`/`res` as `r.req`/`r.res` or equivalent.
 
 ## Development
 

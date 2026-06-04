@@ -72,13 +72,13 @@ Ignored names by default:
 ## Range Serving
 
 ```js
-app.get('/media/:id/file', async (req, res) => {
-  const item = await db.items.get(req.params.id)
-  await serveRange(req, res, item.path)
+app.get('/media/:id/file', async r => {
+  const item = await db.items.get(r.params.id)
+  await serveRange(r, item.path)
 })
 ```
 
-`serveRange(req, res, path)` supports:
+`serveRange()` supports:
 
 - no `Range` header: `200` with full stream
 - valid single byte range: `206`
@@ -92,7 +92,6 @@ app.get('/media/:id/file', async (req, res) => {
 - No multi-range response support. Requests such as `bytes=0-10,20-30` return `416`.
 - No conditional request support yet: `If-Range`, `If-None-Match`, `If-Modified-Since`, `ETag`, and `Last-Modified` are not handled.
 - No cache policy headers are set.
-- Range serving assumes a Node-style `req`/`res`; adapters for Fetch `Request`/`Response` are not included.
 - MIME detection is a small extension map, not content sniffing.
 - The scanner follows normal directory traversal only; it does not include watcher support, symlink policy, device boundary checks, or loop detection.
 - Permission errors abort scans unless `ignoreErrors` is passed.

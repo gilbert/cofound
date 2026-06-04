@@ -74,5 +74,6 @@ See the [server routes guide](server/routes.md).
   - [DOM Helpers](frontend/dom-helpers.md) — `s.is`, `s.on`, `s.event`, `s.animate`, `p`, `s.trust`
 - **Server**
   - [Routes](server/routes.md) — `app.get/post/patch/delete`, request/response API
+  - [Request Object](server/request-object.md) — `r.body`, `r.readable`, `r.writable`, `r.file`, headers, cookies, lifecycle
 - [CLI](cli.md) — Commands, package manager, testing framework
 - [Tips & Gotchas](tips.md) — Common pitfalls and best practices
