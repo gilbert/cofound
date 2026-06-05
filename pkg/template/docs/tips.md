@@ -18,10 +18,37 @@
 - The `onblur` handler should read from local state, not `e.target.value`, since cofound may have already reset it.
 - Use `e.redraw = false` in `onblur` and `onkeydown` (Enter) handlers to prevent cofound from triggering an immediate redraw that interferes with the blur/save flow.
 
-## Event Handling
-- cofound automatically calls `redraw()` after every event handler.
+## Event System and Redraw
+
+Cofound automatically calls a global `redraw()` after every JSX event handler (e.g. `onclick`, `oninput`) completes. This re-renders ALL mounted components, diffs the virtual DOM, and patches the real DOM.
+
+For most handlers (button clicks, tab switches, form submits) this is exactly what you want — the UI reflects the new state.
+
+**However**, for high-frequency events like `oninput` on a textarea or text input, this causes lag: every keystroke triggers a full re-render of the entire page. The browser already updates the input's displayed value natively, so the redraw is wasted work.
+
+**Fix: set `e.redraw = false`** to tell Cofound to skip the redraw:
+
+```tsx
+oninput={(e: any) => {
+  e.redraw = false
+  text = e.target.value
+  onChange(text)
+}}
+```
+
+The closure variables are still updated synchronously — they'll be correct when a future event (Save button, tab switch) triggers a natural redraw.
+
+**When to use `e.redraw = false`:**
+- `oninput` / `onkeydown` / `onkeyup` on text inputs and textareas
+- Any high-frequency handler where the DOM already reflects the change natively
+- Scroll, mousemove, or resize handlers that only update local state
+
+**When NOT to use it:**
+- `onclick` handlers that change what's displayed (tab switches, toggles, navigation)
+- Any handler where other components need to reflect the state change immediately
+
+**Additional notes:**
 - For async handlers, cofound also calls `result.then(redraw)` if the handler returns a promise.
-- Set `e.redraw = false` to suppress the automatic redraw for events where you want to control the timing yourself.
 - cofound uses event delegation via vdom — checking `element.onclick` in the DOM will return `false` even when handlers are properly attached.
 
 ## Backend Links Need `target: '_self'`
@@ -67,7 +94,7 @@ FileHead`
 `('Size')
 ```
 
-- If the override adds styles only, start it with whitespace/newline as above. A leading token before whitespace is parsed as the element/tag selector:
+- If the override adds styles only, start it with whitespace/newline as above. A LEADING TOKEN BEFORE WHITESPACE IS PARSED AS THE ELEMENT/TAG SELECTOR:
 
 ```js
 FileHead`
