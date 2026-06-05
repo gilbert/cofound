@@ -1,4 +1,7 @@
 media/*
 !media/.gitkeep
 .uploads/
+.thumbs/
+.media-library.json
+app.db*
 dist/

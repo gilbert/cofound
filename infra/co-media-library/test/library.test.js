@@ -59,6 +59,71 @@ test('scan reuses probe data for unchanged files and reprobes changed files', as
   assert.equal(library.items()[0].probe.duration, 2)
 })
 
+test('update persists deep-merged metadata', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  await writeFile(path.join(root, 'Movie (2026).mp4'), 'movie')
+
+  const storage = recordingStorage()
+  const library = await openLibrary({ roots: [root], storage })
+  await library.scan()
+  const id = library.items()[0].id
+
+  await library.update(id, {
+    metadata: {
+      thumbnail: {
+        status: 'queued',
+        sourceFingerprint: 'one',
+      },
+    },
+  })
+  const updated = await library.update(id, {
+    metadata: {
+      thumbnail: {
+        status: 'ready',
+        href: '/thumbs/a.jpg',
+      },
+    },
+  })
+
+  assert.deepEqual(updated.metadata.thumbnail, {
+    status: 'ready',
+    sourceFingerprint: 'one',
+    href: '/thumbs/a.jpg',
+  })
+  assert.deepEqual(storage.saved.at(-1).metadata.thumbnail, updated.metadata.thumbnail)
+})
+
+test('scan preserves metadata on unchanged, changed, and moved records', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  const file = path.join(root, 'Movie (2026).mp4')
+  const moved = path.join(root, 'Moved (2026).mp4')
+  await writeFile(file, 'movie')
+
+  const library = await openLibrary({ roots: [root], storage: memoryStorage() })
+  await library.scan()
+  const id = library.items()[0].id
+  await library.update(id, {
+    metadata: {
+      thumbnail: {
+        status: 'ready',
+        href: '/thumbs/a.jpg',
+      },
+    },
+  })
+
+  await library.scan()
+  assert.equal(library.get(id).metadata.thumbnail.status, 'ready')
+
+  await writeFile(file, 'movie changed')
+  await library.scan()
+  assert.equal(library.get(id).metadata.thumbnail.href, '/thumbs/a.jpg')
+
+  await rename(file, moved)
+  await library.scan()
+  assert.equal(library.get(id).rel, 'Moved (2026).mp4')
+  assert.equal(library.get(id).metadata.thumbnail.status, 'ready')
+})
+
 test('scan saves deleted files as tombstones', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
   const file = path.join(root, 'Movie (2026).mp4')
@@ -193,6 +258,23 @@ test('jsonStorage loads and upserts one record at a time', async () => {
 
   assert.deepEqual(JSON.parse(await readFile(file, 'utf8')), [
     { id: 'a', rel: 'one-new.mp4' },
+    { id: 'b', rel: 'two.mp4' },
+  ])
+})
+
+test('jsonStorage serializes concurrent saves', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-json-'))
+  const file = path.join(dir, 'library.json')
+  const storage = jsonStorage(file)
+
+  await storage.loadAll()
+  await Promise.all([
+    storage.saveOne({ id: 'a', rel: 'one.mp4' }),
+    storage.saveOne({ id: 'b', rel: 'two.mp4' }),
+  ])
+
+  assert.deepEqual(JSON.parse(await readFile(file, 'utf8')).sort((a, b) => a.id.localeCompare(b.id)), [
+    { id: 'a', rel: 'one.mp4' },
     { id: 'b', rel: 'two.mp4' },
   ])
 })
