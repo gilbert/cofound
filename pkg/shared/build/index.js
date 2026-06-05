@@ -43,8 +43,8 @@ export default async function(x = {}) {
       {
         name: 'cofoundssr',
         setup: x => x.onResolve(
-          { filter: /server\// },
-          () => ({ external: true })
+          { filter: /(^|\/)\+server(\/|$)/ },
+          x => x.kind === 'entry-point' ? undefined : ({ external: true })
         )
       },
       {

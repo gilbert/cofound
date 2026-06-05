@@ -7,7 +7,7 @@ This package turns media files on disk into stable records an app can cache, lis
 ## API
 
 ```js
-import { jsonStorage, openLibrary } from 'co-media-library'
+import { jsonStorage, memoryStorage, openLibrary } from 'co-media-library'
 import { probe } from 'co-media-probe'
 
 const library = await openLibrary({
@@ -31,7 +31,7 @@ const item = library.get(items[0].id)
 }
 ```
 
-Use `jsonStorage(file)` for a quick local JSON index.
+Use `jsonStorage(file)` for a quick local JSON index, or `memoryStorage()` for tests and examples that do not need persistence.
 
 ## Record Shape
 

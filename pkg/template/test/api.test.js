@@ -1,6 +1,6 @@
 import t from 'cofound/test'
 import { makeTestServer } from 'cofound/server/test-utils'
-import routes from '../server/index.js'
+import routes from '../+server/index.js'
 
 function eq(a, b) {
   const as = JSON.stringify(a), bs = JSON.stringify(b)

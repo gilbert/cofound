@@ -15,9 +15,9 @@ The dev server starts at `http://127.0.0.1:1337`.
 
 ```
 index.js        — client entry point (UI, reactive state)
-server/
++server/
   index.js      — server API routes
-public/         — static assets (images, fonts, etc.)
++public/        — static assets (images, fonts, etc.)
 package.json
 ```
 
@@ -33,7 +33,7 @@ package.json
 
 **Client (`index.js`)** uses `s.mount()` to render a reactive UI. State is managed with `s.live()` — call it with no arguments to read, or pass a value to update. API calls use `s.http` (get, post, patch, delete). Styles are written inline with tagged template literals using cofound's CSS shorthand (`d` = display, `p` = padding, `m` = margin, `c` = color, `bc` = background-color, `ai` = align-items).
 
-**Server (`server/index.js`)** exports a function that receives the `app` object. Register routes with `app.get()`, `app.post()`, `app.patch()`, `app.delete()`. Use `r.body('json')` to parse JSON request bodies and `r.json()` to send JSON responses.
+**Server (`+server/index.js`)** exports a function that receives the `app` object. Register routes with `app.get()`, `app.post()`, `app.patch()`, `app.delete()`. Use `r.body('json')` to parse JSON request bodies and `r.json()` to send JSON responses.
 
 ## Expanding further
 

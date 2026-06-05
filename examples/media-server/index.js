@@ -4,11 +4,10 @@ const chunkSize = 8 * 1024 * 1024
 const files = s.live([])
 const uploads = s.live([])
 const currentDir = s.live('')
+const playerItem = s.live(null)
 let loaded = false
-
-const videoExtensions = new Set(['mp4', 'm4v', 'mkv', 'mov', 'webm', 'avi', 'ts'])
-const audioExtensions = new Set(['mp3', 'flac', 'm4a', 'ogg', 'opus', 'wav'])
-const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'])
+let loadedPlayerId = ''
+let missingPlayerId = ''
 
 const FileHead = s`span
   font-size 12px
@@ -31,7 +30,7 @@ s.mount((attrs, children, { route }) => {
 `(
     route({
       '/': libraryPage,
-      '/player': () => playerPage(route.query.get('path') || ''),
+      '/player/:id': ({ id }) => playerPage(id),
     })
   )
 })
@@ -142,10 +141,13 @@ function libraryPage() {
   ]
 }
 
-function playerPage(file) {
-  const src = fileHref(file)
-  const name = fileName(file)
-  const kind = mediaKind(file)
+function playerPage(id) {
+  loadPlayer(id)
+
+  const item = playerItem()
+  const src = item?.href || streamHref(id)
+  const name = item?.name || 'Player'
+  const kind = mediaKind(item)
 
   return [
     s`
@@ -157,13 +159,13 @@ function playerPage(file) {
     `(
       s`div min-width 0`(
         s`h1 m 0; font-size 28px; line-height 1.15; font-weight 650`(name || 'Player'),
-        file && s`
+        item?.rel && s`
           mt 6px
           overflow hidden
           text-overflow ellipsis
           white-space nowrap
           c color-mix(in srgb, CanvasText 58%, Canvas)
-        `(file)
+        `(item.rel)
       ),
       s`
         d flex
@@ -171,11 +173,18 @@ function playerPage(file) {
         ai center
       `(
         s`a c LinkText`({ href: '/' }, 'Library'),
-        file && s`a c LinkText`({ href: src, target: '_self' }, 'Open file')
+        item && s`a c LinkText`({ href: src, target: '_self' }, 'Open file')
       )
     ),
-    file
+    item
       ? playerSurface(kind, src, name)
+      : missingPlayerId === id
+        ? s`
+            p 18px
+            border 1px solid color-mix(in srgb, CanvasText 18%, Canvas)
+            border-radius 8px
+            c color-mix(in srgb, CanvasText 58%, Canvas)
+          `('Media file not found.')
       : s`
           p 18px
           border 1px solid color-mix(in srgb, CanvasText 18%, Canvas)
@@ -183,6 +192,23 @@ function playerPage(file) {
           c color-mix(in srgb, CanvasText 58%, Canvas)
         `('No media file selected.')
   ]
+}
+
+function loadPlayer(id) {
+  if (!id || s.is.server || loadedPlayerId === id) return
+
+  loadedPlayerId = id
+  missingPlayerId = ''
+  playerItem(null)
+  s.http.get('/media/' + encodeURIComponent(id))
+    .then(item => {
+      playerItem(item)
+      s.redraw()
+    })
+    .catch(() => {
+      missingPlayerId = id
+      s.redraw()
+    })
 }
 
 function playerSurface(kind, src, name) {
@@ -296,7 +322,9 @@ function entryRow(entry) {
             font inherit
             text-align left
           `({ onclick: () => openDir(entry.path) }, entry.name + '/')
-        : s`a c LinkText`({ href: playerHref(entry.path) }, entry.name)
+        : entry.playerHref
+          ? s`a c LinkText`({ href: entry.playerHref }, entry.name)
+          : s`a c LinkText`({ href: entry.href, target: '_self' }, entry.name)
     ),
     s`
       w 110px
@@ -436,23 +464,15 @@ function filesJsonHref(dir = currentDir()) {
   return '/files.json' + (dir ? '?dir=' + encodeURIComponent(dir) : '')
 }
 
-function playerHref(file) {
-  return '/player?path=' + encodeURIComponent(file)
+function streamHref(id) {
+  return '/stream/' + encodeURIComponent(id)
 }
 
-function fileHref(file) {
-  return '/files?path=' + encodeURIComponent(file)
-}
-
-function fileName(file) {
-  return (file || '').split('/').pop()
-}
-
-function mediaKind(file) {
-  const ext = fileName(file).split('.').pop().toLowerCase()
-  if (videoExtensions.has(ext)) return 'video'
-  if (audioExtensions.has(ext)) return 'audio'
-  if (imageExtensions.has(ext)) return 'image'
+function mediaKind(item) {
+  if (item?.mediaType) return item.mediaType
+  if (item?.type?.startsWith('video/')) return 'video'
+  if (item?.type?.startsWith('audio/')) return 'audio'
+  if (item?.type?.startsWith('image/')) return 'image'
   return 'file'
 }
 

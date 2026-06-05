@@ -47,8 +47,8 @@ pkg.scripts.generate = 'cofound generate'
 if (full) {
   pkg.scripts.start = 'cofound start'
   pkg.scripts.dev = 'cofound dev'
-  mk(path.join(target, 'server'), 'index.js', serverScript)
-  mk(path.join(target, 'public'))
+  mk(path.join(target, '+server'), 'index.js', serverScript)
+  mk(path.join(target, '+public'))
   mk(target, 'index.js', clientScript.replace('export', '// Add `export default` to enable ssr with hydration\nexport'))
 } else if (script) {
   pkg.scripts.start = 'cofound start script index.js'
@@ -57,8 +57,8 @@ if (full) {
 } else if (noscript) {
   pkg.scripts.start = 'cofound start noscript'
   pkg.scripts.dev = 'cofound dev noscript'
-  mk(path.join(target, 'server'), 'index.js', serverScript)
-  mk(path.join(target, 'public'))
+  mk(path.join(target, '+server'), 'index.js', serverScript)
+  mk(path.join(target, '+public'))
   mk(target, 'index.js', clientScript)
 } else if (staticServe) {
   pkg.scripts.start = 'cofound start static'
