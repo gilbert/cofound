@@ -1,7 +1,7 @@
 import t from 'cofound/test'
 import { makeTestDb } from 'cofound/db/test-utils'
 import { makeTestServer } from 'cofound/server/test-utils'
-import { createRoutes } from '../server/index.js'
+import { createRoutes } from '../+server/index.js'
 
 function eq(a, b) {
   const as = JSON.stringify(a), bs = JSON.stringify(b)

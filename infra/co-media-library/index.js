@@ -105,6 +105,19 @@ export function jsonStorage(file) {
   }
 }
 
+export function memoryStorage(records = []) {
+  const cache = new Map(records.map(record => [record.id, record]))
+
+  return {
+    async loadAll() {
+      return [...cache.values()]
+    },
+    async saveOne(record) {
+      cache.set(record.id, record)
+    },
+  }
+}
+
 export function mediaId(root, rel) {
   return createHash('sha1').update(path.resolve(root)).update('\0').update(slash(rel)).digest('hex')
 }

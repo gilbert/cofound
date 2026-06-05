@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promise
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { jsonStorage, mediaId, openLibrary, weakFingerprint } from '../index.js'
+import { jsonStorage, mediaId, memoryStorage, openLibrary, weakFingerprint } from '../index.js'
 
 test('openLibrary requires explicit storage and roots', async () => {
   await assert.rejects(() => openLibrary({ roots: ['media'] }), /storage/)
@@ -17,7 +17,7 @@ test('scan indexes media files and persists changed records', async () => {
   await writeFile(path.join(root, 'Shows', 'Show S01E01 - Pilot.mkv'), 'episode')
   await writeFile(path.join(root, 'poster.png'), 'ignored')
 
-  const storage = memoryStorage()
+  const storage = recordingStorage()
   const library = await openLibrary({ roots: [root], storage })
   const result = await library.scan()
   const items = library.items()
@@ -36,7 +36,7 @@ test('scan reuses probe data for unchanged files and reprobes changed files', as
   await writeFile(file, 'movie')
 
   const probes = []
-  const storage = memoryStorage()
+  const storage = recordingStorage()
   const library = await openLibrary({
     roots: [root],
     storage,
@@ -63,7 +63,7 @@ test('scan saves deleted files as tombstones', async () => {
   const file = path.join(root, 'Movie (2026).mp4')
   await writeFile(file, 'movie')
 
-  const storage = memoryStorage()
+  const storage = recordingStorage()
   const library = await openLibrary({ roots: [root], storage })
   await library.scan()
   await rm(file)
@@ -81,7 +81,7 @@ test('scan preserves ids for recent unambiguous renames', async () => {
   const renamed = path.join(root, 'Renamed (2026).mp4')
   await writeFile(file, 'movie')
 
-  const storage = memoryStorage()
+  const storage = recordingStorage()
   const library = await openLibrary({ roots: [root], storage })
   await library.scan()
   const id = library.items()[0].id
@@ -103,7 +103,7 @@ test('scan does not match deleted tombstones', async () => {
   const file = path.join(root, 'Movie (2026).mp4')
   await writeFile(file, 'movie')
 
-  const storage = memoryStorage()
+  const storage = recordingStorage()
   const library = await openLibrary({ roots: [root], storage })
   await library.scan()
   const oldId = library.items()[0].id
@@ -129,7 +129,7 @@ test('scan does not match ambiguous fingerprints', async () => {
   await writeFile(path.join(root, 'One (2026).mp4'), 'same')
   await writeFile(path.join(root, 'Two (2026).mp4'), 'same')
 
-  const storage = memoryStorage()
+  const storage = recordingStorage()
   const library = await openLibrary({ roots: [root], storage })
   await library.scan()
 
@@ -196,15 +196,13 @@ test('jsonStorage loads and upserts one record at a time', async () => {
   ])
 })
 
-function memoryStorage(records = []) {
-  const map = new Map(records.map(record => [record.id, record]))
+function recordingStorage(records = []) {
+  const storage = memoryStorage(records)
   return {
     saved: [],
-    async loadAll() {
-      return [...map.values()]
-    },
+    loadAll: storage.loadAll,
     async saveOne(record) {
-      map.set(record.id, record)
+      await storage.saveOne(record)
       this.saved.push(record)
     },
   }

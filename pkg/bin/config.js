@@ -69,7 +69,7 @@ async function fromArgs() {
       version   : 1
     },
     parameters: {
-      publicDir   : 'public',
+      publicDir   : '+public',
       outputDir   : 'dist',
       entry       : getEntry,
       cwd         : getCWD,
@@ -325,7 +325,7 @@ export async function resolve() {
   }
 
   async function defaultServer() {
-    const defaultServerPath = path.join(cwd, 'server')
+    const defaultServerPath = path.join(cwd, '+server')
     try {
       return await import(defaultServerPath)
     } catch (error) {
