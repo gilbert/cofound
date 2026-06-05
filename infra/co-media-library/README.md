@@ -4,6 +4,8 @@ Small media library indexer.
 
 This package turns media files on disk into stable records an app can cache, list, search, and play. It deliberately avoids UI, users, permissions, remote metadata, playback state, thumbnails, and transcoding.
 
+It indexes video, audio, and image files using `co-media-file`'s default media type detection.
+
 ## API
 
 ```js
@@ -97,6 +99,7 @@ Set `fingerprint: false` to disable move detection, or pass `fingerprint(file, s
 - No directory watcher or background daemon.
 - No locking across multiple processes writing the same JSON file.
 - Move detection is intentionally weak and conservative. Files with matching size plus sampled bytes can collide, and ambiguous matches or previously deleted tombstones are ignored.
+- Image support is indexing only. Dimensions, color metadata, EXIF orientation, thumbnails, and transforms are left to app code.
 - No remote metadata matching, artwork, collections, seasons, users, permissions, watch state, or transcoding.
 - Probe errors are not swallowed. Apps that want partial scan success should wrap their probe function.
 

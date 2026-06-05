@@ -4,6 +4,7 @@ import path from 'node:path'
 
 export const VIDEO_EXTENSIONS = ['.mp4', '.m4v', '.mkv', '.mov', '.webm', '.avi', '.ts']
 export const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.m4a', '.ogg', '.opus', '.wav']
+export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']
 export const IGNORE_NAMES = new Set([
   '$RECYCLE.BIN',
   'System Volume Information',
@@ -26,6 +27,12 @@ const MIME_TYPES = new Map([
   ['.ogg', 'audio/ogg'],
   ['.opus', 'audio/opus'],
   ['.wav', 'audio/wav'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.png', 'image/png'],
+  ['.gif', 'image/gif'],
+  ['.webp', 'image/webp'],
+  ['.avif', 'image/avif'],
 ])
 
 const DROP_TOKENS = [
@@ -43,8 +50,10 @@ export function mediaType(file, options = {}) {
   const ext = path.extname(file).toLowerCase()
   const video = options.videoExtensions || VIDEO_EXTENSIONS
   const audio = options.audioExtensions || AUDIO_EXTENSIONS
+  const image = options.imageExtensions || IMAGE_EXTENSIONS
   if (video.includes(ext)) return 'video'
   if (audio.includes(ext)) return 'audio'
+  if (image.includes(ext)) return 'image'
   return null
 }
 
