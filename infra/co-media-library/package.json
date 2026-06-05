@@ -1,0 +1,13 @@
+{
+  "name": "co-media-library",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "co-media-file": "file:../co-media-file"
+  }
+}
