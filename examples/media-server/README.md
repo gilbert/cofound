@@ -5,8 +5,10 @@ Tiny upload-and-view media server using Cofound plus Cofound infra primitives.
 It provides one page:
 
 - upload files with the small tus-compatible resumable upload flow
-- list every completed upload
-- link each uploaded file directly at `/files/<name>`
+- browse directories under `MEDIA_DIR`
+- create directories in the current directory
+- open uploaded media in a simple player page
+- link each raw file directly through `/files?path=<path>`
 - serve linked files with HTTP range support for browser viewing and seeking
 
 ## Run
@@ -29,11 +31,11 @@ Environment variables:
 - `MEDIA_DIR`: default `examples/media-server/media`
 - `UPLOAD_DIR`: default `examples/media-server/.uploads`
 
-Uploaded files are moved into `MEDIA_DIR` after completion. Existing filenames are preserved when possible; collisions get a numeric suffix.
+Uploaded files are moved into the selected directory under `MEDIA_DIR` after completion. Existing filenames are preserved when possible; collisions get a numeric suffix.
 
 ## Structure
 
 - `index.js`: Cofound client page.
-- `server/index.js`: Cofound server routes for uploads, listing, and file serving.
+- `server/index.js`: Cofound server routes for uploads, directory listing, directory creation, and file serving.
 - `media/`: completed uploads.
 - `.uploads/`: temporary tus upload files.

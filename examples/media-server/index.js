@@ -3,7 +3,12 @@ import s from 'cofound'
 const chunkSize = 8 * 1024 * 1024
 const files = s.live([])
 const uploads = s.live([])
+const currentDir = s.live('')
 let loaded = false
+
+const videoExtensions = new Set(['mp4', 'm4v', 'mkv', 'mov', 'webm', 'avi', 'ts'])
+const audioExtensions = new Set(['mp3', 'flac', 'm4a', 'ogg', 'opus', 'wav'])
+const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'])
 
 const FileHead = s`span
   font-size 12px
@@ -12,10 +17,10 @@ const FileHead = s`span
   c color-mix(in srgb, CanvasText 58%, Canvas)
 `
 
-s.mount(() => {
+s.mount((attrs, children, { route }) => {
   if (!loaded && !s.is.server) {
     loaded = true
-    refreshFiles()
+    refreshFiles('')
   }
 
   return s`
@@ -24,6 +29,20 @@ s.mount(() => {
   p 0 24px
   font-family system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 `(
+    route({
+      '/': libraryPage,
+      '/player': () => playerPage(route.query.get('path') || ''),
+    })
+  )
+})
+
+function libraryPage() {
+  const entries = files()
+  const dir = currentDir()
+  const fileCount = entries.filter(file => file.kind === 'file').length
+  const directoryCount = entries.filter(file => file.kind === 'directory').length
+
+  return [
   s`
     d flex
     ai end
@@ -34,11 +53,20 @@ s.mount(() => {
     s`div`(
       s`h1 m 0; font-size 28px; line-height 1.1; font-weight 650`('Media Server'),
       s`div mt 6px; c color-mix(in srgb, CanvasText 58%, Canvas)`(
-        files().length + ' uploaded file' + (files().length === 1 ? '' : 's')
+        summary(directoryCount, fileCount)
       )
     ),
-    s`a c LinkText`({ href: '/files.json', target: '_self' }, 'JSON')
+    s`
+      d flex
+      gap 10px
+      ai center
+    `(
+      s`button`({ onclick: createDirectory }, 'New directory'),
+      s`a c LinkText`({ href: filesJsonHref(), target: '_self' }, 'JSON')
+    )
   ),
+
+  breadcrumbs(dir),
 
   s`
     border 1px dashed color-mix(in srgb, CanvasText 34%, Canvas)
@@ -66,7 +94,7 @@ s.mount(() => {
       onchange: event => uploadFiles(event.target.files),
     }),
     s`div mt 8px; c color-mix(in srgb, CanvasText 58%, Canvas)`(
-      'Drop files here or choose files to upload.'
+      'Drop files here or choose files to upload into this directory.'
     ),
     uploads().length > 0 && s`div d grid; gap 10px; mt 14px`(
       uploads().map(upload => s`
@@ -95,7 +123,7 @@ s.mount(() => {
       FileHead`
         flex 1
         min-width 0
-      `('File'),
+      `('Name'),
       FileHead`
         w 110px
       `('Size'),
@@ -103,25 +131,154 @@ s.mount(() => {
         w 190px
       `('Updated')
     ),
-    files().length
-      ? files().map(fileRow)
+    entries.length
+      ? entries.map(entryRow)
       : s`
           p 18px 8px
           c color-mix(in srgb, CanvasText 58%, Canvas)
           border-bottom 1px solid color-mix(in srgb, CanvasText 14%, Canvas)
-        `('No uploaded files yet.')
+        `('This directory is empty.')
   )
-  )
-})
+  ]
+}
 
-function fileRow(file) {
+function playerPage(file) {
+  const src = fileHref(file)
+  const name = fileName(file)
+  const kind = mediaKind(file)
+
+  return [
+    s`
+      d flex
+      ai center
+      jc space-between
+      gap 16px
+      mb 20px
+    `(
+      s`div min-width 0`(
+        s`h1 m 0; font-size 28px; line-height 1.15; font-weight 650`(name || 'Player'),
+        file && s`
+          mt 6px
+          overflow hidden
+          text-overflow ellipsis
+          white-space nowrap
+          c color-mix(in srgb, CanvasText 58%, Canvas)
+        `(file)
+      ),
+      s`
+        d flex
+        gap 10px
+        ai center
+      `(
+        s`a c LinkText`({ href: '/' }, 'Library'),
+        file && s`a c LinkText`({ href: src, target: '_self' }, 'Open file')
+      )
+    ),
+    file
+      ? playerSurface(kind, src, name)
+      : s`
+          p 18px
+          border 1px solid color-mix(in srgb, CanvasText 18%, Canvas)
+          border-radius 8px
+          c color-mix(in srgb, CanvasText 58%, Canvas)
+        `('No media file selected.')
+  ]
+}
+
+function playerSurface(kind, src, name) {
+  if (kind === 'video') {
+    return s`video
+      d block
+      max-width 100%
+      max-height 72vh
+      m 0 auto
+      bg black
+      border-radius 8px
+      object-fit contain
+    `({
+      src,
+      controls: true,
+      autoplay: true,
+      playsinline: true,
+      preload: 'metadata',
+    })
+  }
+
+  if (kind === 'audio') {
+    return s`
+      d grid
+      gap 16px
+      p 24px
+      border 1px solid color-mix(in srgb, CanvasText 18%, Canvas)
+      border-radius 8px
+      bg color-mix(in srgb, CanvasText 4%, Canvas)
+    `(
+      s`div font-size 18px; font-weight 600`(name),
+      s`audio w 100%`({
+        src,
+        controls: true,
+        autoplay: true,
+      })
+    )
+  }
+
+  if (kind === 'image') {
+    return s`img
+      d block
+      max-width 100%
+      max-height 72vh
+      m 0 auto
+      border-radius 8px
+    `({ src, alt: name })
+  }
+
+  return s`
+    p 18px
+    border 1px solid color-mix(in srgb, CanvasText 18%, Canvas)
+    border-radius 8px
+    c color-mix(in srgb, CanvasText 58%, Canvas)
+  `('This file type is not directly playable in the browser.')
+}
+
+function breadcrumbs(dir) {
+  const parts = dir ? dir.split('/') : []
+  const items = [crumb('Media', '')]
+  let path = ''
+  for (const part of parts) {
+    path = path ? path + '/' + part : part
+    items.push(s`span`('/'), crumb(part, path))
+  }
+
+  return s`
+    d flex
+    ai center
+    gap 8px
+    flex-wrap wrap
+    mb 18px
+    c color-mix(in srgb, CanvasText 66%, Canvas)
+  `(items)
+}
+
+function crumb(label, dir) {
+  return s`button
+    p 0
+    border 0
+    bg transparent
+    c LinkText
+    cursor pointer
+    font inherit
+  `({ onclick: () => openDir(dir) }, label)
+}
+
+function entryRow(entry) {
+  const directory = entry.kind === 'directory'
   return s`
     d flex
     ai center
     gap 16px
     p 10px 8px
     border-bottom 1px solid color-mix(in srgb, CanvasText 14%, Canvas)
-  `({ key: file.name },
+  `({ key: entry.kind + ':' + entry.path },
     s`
       flex 1
       min-width 0
@@ -129,31 +286,65 @@ function fileRow(file) {
       text-overflow ellipsis
       white-space nowrap
     `(
-      s`a c LinkText`({ href: file.href, target: '_self' }, file.name)
+      directory
+        ? s`button
+            p 0
+            border 0
+            bg transparent
+            c LinkText
+            cursor pointer
+            font inherit
+            text-align left
+          `({ onclick: () => openDir(entry.path) }, entry.name + '/')
+        : s`a c LinkText`({ href: playerHref(entry.path) }, entry.name)
     ),
     s`
       w 110px
       white-space nowrap
       c color-mix(in srgb, CanvasText 66%, Canvas)
-    `(formatBytes(file.size)),
+    `(directory ? '-' : formatBytes(entry.size)),
     s`
       w 190px
       white-space nowrap
       c color-mix(in srgb, CanvasText 66%, Canvas)
-    `(new Date(file.updatedAt).toLocaleString())
+    `(new Date(entry.updatedAt).toLocaleString())
   )
 }
 
-async function refreshFiles() {
-  files(await s.http.get('/files.json'))
+async function openDir(dir) {
+  currentDir(dir)
+  await refreshFiles(dir)
+}
+
+async function refreshFiles(dir = currentDir()) {
+  const listing = await s.http.get(filesJsonHref(dir))
+  currentDir(listing.dir || '')
+  files(listing.entries || [])
   s.redraw()
 }
 
-function uploadFiles(list) {
-  for (const file of list) uploadFile(file)
+async function createDirectory() {
+  const name = window.prompt('Directory name')
+  if (!name) return
+
+  const response = await fetch('/directories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dir: currentDir(), name }),
+  })
+  if (!response.ok) {
+    window.alert('Could not create directory.')
+    return
+  }
+  await refreshFiles()
 }
 
-async function uploadFile(file) {
+function uploadFiles(list) {
+  const dir = currentDir()
+  for (const file of list) uploadFile(file, dir)
+}
+
+async function uploadFile(file, dir) {
   const item = {
     id: crypto.randomUUID(),
     name: file.name,
@@ -164,7 +355,7 @@ async function uploadFile(file) {
   s.redraw()
 
   try {
-    let url = localStorage.getItem(storageKey(file))
+    let url = localStorage.getItem(storageKey(file, dir))
     let offset = 0
     if (url) {
       const head = await fetch(url, { method: 'HEAD', headers: tusHeaders() })
@@ -178,12 +369,12 @@ async function uploadFile(file) {
         headers: {
           ...tusHeaders(),
           'Upload-Length': String(file.size),
-          'Upload-Metadata': metadata({ filename: file.name }),
+          'Upload-Metadata': metadata({ filename: file.name, dir }),
         },
       })
       if (!created.ok) throw new Error('Create failed: ' + created.status)
       url = created.headers.get('Location')
-      localStorage.setItem(storageKey(file), url)
+      localStorage.setItem(storageKey(file, dir), url)
     }
 
     while (offset < file.size) {
@@ -213,7 +404,7 @@ async function uploadFile(file) {
       })
     }
 
-    localStorage.removeItem(storageKey(file))
+    localStorage.removeItem(storageKey(file, dir))
     updateUpload(item.id, { progress: 1, status: 'Done' })
     await refreshFiles()
   } catch (err) {
@@ -237,8 +428,40 @@ function metadata(values) {
     .join(',')
 }
 
-function storageKey(file) {
-  return 'media-server:' + file.name + ':' + file.size + ':' + file.lastModified
+function storageKey(file, dir) {
+  return 'media-server:' + dir + ':' + file.name + ':' + file.size + ':' + file.lastModified
+}
+
+function filesJsonHref(dir = currentDir()) {
+  return '/files.json' + (dir ? '?dir=' + encodeURIComponent(dir) : '')
+}
+
+function playerHref(file) {
+  return '/player?path=' + encodeURIComponent(file)
+}
+
+function fileHref(file) {
+  return '/files?path=' + encodeURIComponent(file)
+}
+
+function fileName(file) {
+  return (file || '').split('/').pop()
+}
+
+function mediaKind(file) {
+  const ext = fileName(file).split('.').pop().toLowerCase()
+  if (videoExtensions.has(ext)) return 'video'
+  if (audioExtensions.has(ext)) return 'audio'
+  if (imageExtensions.has(ext)) return 'image'
+  return 'file'
+}
+
+function summary(directories, uploadedFiles) {
+  const parts = [
+    directories + ' director' + (directories === 1 ? 'y' : 'ies'),
+    uploadedFiles + ' file' + (uploadedFiles === 1 ? '' : 's'),
+  ]
+  return parts.join(', ')
 }
 
 function formatBytes(bytes) {
