@@ -1,6 +1,6 @@
 # Server Routes
 
-The server entry point (`server/index.js`) exports a default async function that receives the `app` object for defining HTTP routes.
+The server entry point (`+server/index.js`) exports a default async function that receives the `app` object for defining HTTP routes.
 
 ```js
 export default async function(app) {

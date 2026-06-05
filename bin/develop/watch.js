@@ -46,7 +46,7 @@ function node(x) {
   // For TypeScript files that might be imported by other modules,
   // restart the node process to ensure all imports are refreshed
   const isTypescript = x.path.endsWith('.ts') || x.path.endsWith('.tsx')
-  const isMainEntry = x.path.includes('/server/index.') || x.path.includes('/index.')
+  const isMainEntry = x.path.includes('/+server/index.') || x.path.includes('/index.')
 
   if (x.next === x.content) {
     api.node.restart(x)
@@ -66,7 +66,7 @@ function browser(x) {
 
 function both(x) {
   const isTypescript = x.path.endsWith('.ts') || x.path.endsWith('.tsx')
-  const isMainEntry = x.path.includes('/server/index.') || x.path.includes('/index.')
+  const isMainEntry = x.path.includes('/+server/index.') || x.path.includes('/index.')
 
   if (x.next === x.content) {
     x.content === x.pre

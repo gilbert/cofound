@@ -5,9 +5,9 @@ Cofound (cofound) is a lightweight, reactive JavaScript framework for building d
 ## Project Structure
 
 ```
-├── server/       # Server-side code
+├── +server/      # Server-side code
 │   └── index.js  # Server routes
-├── public/       # Static pass-through files
+├── +public/      # Static pass-through files
 ├── index.js      # Client-side entry point
 ├── package.json  # Package manifest
 └── docs/         # Framework documentation
@@ -51,7 +51,7 @@ Components are the building blocks — they can be [styled](frontend/components.
 
 ### Server
 
-The server entry point (`server/index.js`) exports a default function that receives the `app` object for defining routes:
+The server entry point (`+server/index.js`) exports a default function that receives the `app` object for defining routes:
 
 ```js
 export default async function(app) {
