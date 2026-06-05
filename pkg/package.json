@@ -8,9 +8,10 @@
   "scripts": {
     "postinstall": "node shared/server/uws.js",
     "start": "node ./bin/index start",
-    "test": "node ./tests/ssr.js && node ./tests/db.js",
+    "test": "node ./tests/ssr.js && node ./tests/db.js && node ./tests/jobs.js",
     "test:ssr": "node ./tests/ssr.js",
     "test:db": "node ./tests/db.js",
+    "test:jobs": "node ./tests/jobs.js",
     "lint": "eslint . --ignore-pattern dist.js",
     "build:min": "esbuild src/index.js --minify --format=esm --bundle --outfile=cofound.min.js",
     "build:bundle": "esbuild src/index.js --format=esm --bundle --outfile=cofound.js",
@@ -28,6 +29,7 @@
     "./env": "./bin/env.js",
     "./exit": "./bin/exit.js",
     "./build": "./shared/build/index.js",
+    "./jobs": "./jobs/index.js",
     "./server": "./shared/server/index.js",
     "./server/window": "./ssr/window.js",
     "./ssr": "./ssr/index.js",
@@ -43,6 +45,7 @@
   "files": [
     "/bin",
     "/db",
+    "/jobs",
     "/shared",
     "/src",
     "/ssr"
