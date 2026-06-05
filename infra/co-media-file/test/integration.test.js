@@ -31,6 +31,7 @@ test('phase 1 smoke test scans, probes, and range-serves several media types', {
     path.join(generated, 'Season 01', 'Test Show S01E01 - Pilot.webm'),
     path.join(generated, 'Test Track.mp3'),
     path.join(generated, 'Test Tone.wav'),
+    path.join(generated, 'Poster.png'),
   ]
 
   for (const file of files.slice(0, 4)) await access(file)
@@ -71,17 +72,25 @@ test('phase 1 smoke test scans, probes, and range-serves several media types', {
     files[7],
   ])
 
+  ffmpeg([
+    '-f', 'lavfi',
+    '-i', 'testsrc=size=160x90',
+    '-frames:v', '1',
+    files[8],
+  ])
+
   const scanned = []
   for await (const file of scanMediaFiles(generated)) scanned.push(file)
-  assert.equal(scanned.length, 4)
+  assert.equal(scanned.length, 5)
   assert.deepEqual(scanned.map(file => path.extname(file.path)).sort(), [
     '.mkv',
     '.mp3',
+    '.png',
     '.wav',
     '.webm',
   ])
 
-  for (const file of files) {
+  for (const file of files.slice(0, 8)) {
     const info = await probe(file)
     assert.ok(info.video || info.audio.length > 0, file)
   }

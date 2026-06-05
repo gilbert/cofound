@@ -21,6 +21,7 @@ import {
 ```js
 isMediaFile('/media/The Matrix (1999).mkv') // true
 mediaType('/media/song.flac')              // 'audio'
+mediaType('/media/poster.png')             // 'image'
 ```
 
 Default video extensions:
@@ -35,6 +36,12 @@ Default audio extensions:
 ['.mp3', '.flac', '.m4a', '.ogg', '.opus', '.wav']
 ```
 
+Default image extensions:
+
+```js
+['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']
+```
+
 ## Filename Parsing
 
 ```js
@@ -45,7 +52,7 @@ parseMediaName('Breaking Bad S03E07 - One Minute.mkv')
 // { kind: 'episode', show: 'Breaking Bad', season: 3, episode: 7, title: 'One Minute' }
 ```
 
-The parser is best-effort. Unknown names return a cleaned title with `kind: 'video'`, `kind: 'audio'`, or `kind: 'unknown'`.
+The parser is best-effort. Unknown names return a cleaned title with `kind: 'video'`, `kind: 'audio'`, `kind: 'image'`, or `kind: 'unknown'`.
 
 ## Scanning
 
@@ -107,4 +114,4 @@ Run tests:
 npm test
 ```
 
-The integration smoke test uses existing `tmp-samples/` media and generates MKV, WebM, MP3, and WAV samples in a temp directory when `ffmpeg` and `ffprobe` are available.
+The integration smoke test uses existing `tmp-samples/` media and generates MKV, WebM, MP3, WAV, and image samples in a temp directory when `ffmpeg` and `ffprobe` are available.

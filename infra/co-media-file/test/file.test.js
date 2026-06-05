@@ -12,13 +12,14 @@ import {
   serveRange,
 } from '../index.js'
 
-test('detects video and audio media extensions', () => {
+test('detects video, audio, and image media extensions', () => {
   assert.equal(isMediaFile('/media/movie.mp4'), true)
   assert.equal(isMediaFile('/media/movie.MKV'), true)
   assert.equal(isMediaFile('/media/song.flac'), true)
-  assert.equal(isMediaFile('/media/poster.png'), false)
+  assert.equal(isMediaFile('/media/poster.png'), true)
   assert.equal(mediaType('/media/movie.webm'), 'video')
   assert.equal(mediaType('/media/song.mp3'), 'audio')
+  assert.equal(mediaType('/media/poster.png'), 'image')
 })
 
 test('parses common movie filenames', () => {
@@ -63,6 +64,11 @@ test('falls back for unknown media names', () => {
     kind: 'audio',
     title: '12 The Rite Of Spring',
   })
+
+  assert.deepEqual(parseMediaName('cover-art.png'), {
+    kind: 'image',
+    title: 'cover-art',
+  })
 })
 
 test('scanMediaFiles yields only allowlisted media and ignores junk directories', async () => {
@@ -79,13 +85,14 @@ test('scanMediaFiles yields only allowlisted media and ignores junk directories'
   for await (const file of scanMediaFiles(dir)) files.push(file)
   files.sort((a, b) => a.path.localeCompare(b.path))
 
-  assert.equal(files.length, 3)
-  assert.deepEqual(files.map(file => path.basename(file.path)), [
+  assert.equal(files.length, 4)
+  assert.deepEqual(files.map(file => path.basename(file.path)).sort((a, b) => a.localeCompare(b)), [
+    'poster.png',
     'song.mp3',
     'The Matrix (1999).mkv',
     'Breaking Bad S03E07 - One Minute.mp4',
   ].sort((a, b) => a.localeCompare(b)))
-  assert.deepEqual(files.map(file => file.type).sort(), ['audio', 'video', 'video'])
+  assert.deepEqual(files.map(file => file.type).sort(), ['audio', 'image', 'video', 'video'])
 })
 
 test('serveRange returns a full response without Range', async () => {

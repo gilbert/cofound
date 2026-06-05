@@ -22,12 +22,13 @@ test('scan indexes media files and persists changed records', async () => {
   const result = await library.scan()
   const items = library.items()
 
-  assert.deepEqual(result, { added: 2, changed: 0, unchanged: 0, moved: 0, deleted: 0, total: 2 })
-  assert.equal(items.length, 2)
-  assert.deepEqual(items.map(item => item.rel), ['Movie (2026).mp4', 'Shows/Show S01E01 - Pilot.mkv'])
+  assert.deepEqual(result, { added: 3, changed: 0, unchanged: 0, moved: 0, deleted: 0, total: 3 })
+  assert.equal(items.length, 3)
+  assert.deepEqual(items.map(item => item.rel), ['Movie (2026).mp4', 'poster.png', 'Shows/Show S01E01 - Pilot.mkv'])
   assert.equal(items[0].id, mediaId(root, 'Movie (2026).mp4'))
   assert.equal(items[0].pathId, mediaId(root, 'Movie (2026).mp4'))
-  assert.equal(storage.saved.length, 2)
+  assert.equal(items[1].type, 'image')
+  assert.equal(storage.saved.length, 3)
 })
 
 test('scan reuses probe data for unchanged files and reprobes changed files', async () => {
