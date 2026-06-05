@@ -43,6 +43,7 @@ export async function openLibrary(options = {}) {
           id,
           scannedAt: now,
           probe,
+          metadata: previous?.metadata || {},
           deleted: false,
           ...(moved ? { movedFrom: movedFrom.rel, movedAt: now } : {}),
         }
@@ -74,6 +75,19 @@ export async function openLibrary(options = {}) {
       const record = records.get(id)
       return record && !record.deleted ? record : null
     },
+    async update(id, patch = {}) {
+      const record = records.get(id)
+      if (!record || record.deleted) return null
+
+      const next = {
+        ...record,
+        ...patch,
+        metadata: merge(record.metadata || {}, patch.metadata || {}),
+      }
+      records.set(id, next)
+      await storage.saveOne(next)
+      return next
+    },
   }
 
   function items(options = {}) {
@@ -86,6 +100,7 @@ export async function openLibrary(options = {}) {
 
 export function jsonStorage(file) {
   let cache = null
+  let writing = Promise.resolve()
 
   return {
     async loadAll() {
@@ -98,11 +113,21 @@ export function jsonStorage(file) {
     async saveOne(record) {
       if (!cache) await this.loadAll()
       cache.set(record.id, record)
-      await mkdir(path.dirname(file), { recursive: true })
-      await writeFile(file + '.tmp', JSON.stringify([...cache.values()], null, 2))
-      await rename(file + '.tmp', file)
+      const next = writing.then(
+        () => writeCache(file, cache),
+        () => writeCache(file, cache),
+      )
+      writing = next.catch(() => {})
+      await next
     },
   }
+}
+
+async function writeCache(file, cache) {
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`
+  await mkdir(path.dirname(file), { recursive: true })
+  await writeFile(tmp, JSON.stringify([...cache.values()], null, 2))
+  await rename(tmp, file)
 }
 
 export function memoryStorage(records = []) {
@@ -255,4 +280,18 @@ function add(map, key, value) {
 
 function slash(value) {
   return String(value || '').split(path.sep).join('/')
+}
+
+function merge(a, b) {
+  const out = { ...a }
+  for (const [key, value] of Object.entries(b)) {
+    out[key] = isPlainObject(value) && isPlainObject(out[key])
+      ? merge(out[key], value)
+      : value
+  }
+  return out
+}
+
+function isPlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value)
 }

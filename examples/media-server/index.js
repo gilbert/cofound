@@ -8,12 +8,29 @@ const playerItem = s.live(null)
 let loaded = false
 let loadedPlayerId = ''
 let missingPlayerId = ''
+let thumbnailPoll = null
+let refreshSeq = 0
 
 const FileHead = s`span
   font-size 12px
   text-transform uppercase
   letter-spacing 0
   c color-mix(in srgb, CanvasText 58%, Canvas)
+`
+
+const ThumbBox = s`span
+  w 72px
+  h 44px
+  flex 0 0 72px
+  d flex
+  ai center
+  jc center
+  overflow hidden
+  border-radius 6px
+  bg color-mix(in srgb, CanvasText 8%, Canvas)
+  c color-mix(in srgb, CanvasText 58%, Canvas)
+  font-size 12px
+  line-height 1
 `
 
 s.mount((attrs, children, { route }) => {
@@ -120,6 +137,9 @@ function libraryPage() {
       border-bottom 1px solid color-mix(in srgb, CanvasText 20%, Canvas)
     `(
       FileHead`
+        w 72px
+      `(''),
+      FileHead`
         flex 1
         min-width 0
       `('Name'),
@@ -177,7 +197,7 @@ function playerPage(id) {
       )
     ),
     item
-      ? playerSurface(kind, src, name)
+      ? playerSurface(kind, src, name, item.thumbnail)
       : missingPlayerId === id
         ? s`
             p 18px
@@ -211,7 +231,7 @@ function loadPlayer(id) {
     })
 }
 
-function playerSurface(kind, src, name) {
+function playerSurface(kind, src, name, thumbnail) {
   if (kind === 'video') {
     return s`video
       d block
@@ -227,6 +247,7 @@ function playerSurface(kind, src, name) {
       autoplay: true,
       playsinline: true,
       preload: 'metadata',
+      poster: thumbnail?.status === 'ready' ? thumbnail.href : undefined,
     })
   }
 
@@ -305,6 +326,7 @@ function entryRow(entry) {
     p 10px 8px
     border-bottom 1px solid color-mix(in srgb, CanvasText 14%, Canvas)
   `({ key: entry.kind + ':' + entry.path },
+    thumbnailCell(entry),
     s`
       flex 1
       min-width 0
@@ -339,16 +361,58 @@ function entryRow(entry) {
   )
 }
 
+function thumbnailCell(entry) {
+  if (entry.thumbnail?.status === 'ready') {
+    return ThumbBox({ title: 'Thumbnail ready' },
+      s`img
+        d block
+        w 100%
+        h 100%
+        object-fit cover
+      `({
+        src: entry.thumbnail.href,
+        alt: '',
+        loading: 'lazy',
+      })
+    )
+  }
+
+  if (entry.thumbnail?.status === 'queued' || entry.thumbnail?.status === 'generating') {
+    return ThumbBox({ title: 'Generating thumbnail' }, '...')
+  }
+
+  if (entry.thumbnail?.status === 'failed') {
+    return ThumbBox({ title: entry.thumbnail.error || 'Thumbnail failed' }, '!')
+  }
+
+  return ThumbBox({ title: entry.kind === 'directory' ? 'Directory' : 'No thumbnail' })
+}
+
 async function openDir(dir) {
   currentDir(dir)
   await refreshFiles(dir)
 }
 
 async function refreshFiles(dir = currentDir()) {
+  const seq = ++refreshSeq
   const listing = await s.http.get(filesJsonHref(dir))
+  if (seq !== refreshSeq) return
   currentDir(listing.dir || '')
   files(listing.entries || [])
+  syncThumbnailPolling()
   s.redraw()
+}
+
+function syncThumbnailPolling() {
+  const pending = files().some(entry =>
+    entry.thumbnail?.status === 'queued' || entry.thumbnail?.status === 'generating'
+  )
+  if (pending && !thumbnailPoll) {
+    thumbnailPoll = setInterval(() => refreshFiles(), 1500)
+  } else if (!pending && thumbnailPoll) {
+    clearInterval(thumbnailPoll)
+    thumbnailPoll = null
+  }
 }
 
 async function createDirectory() {

@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "cofound dev --port 7357",
     "start": "cofound start --port 7357",
-    "build": "cofound build"
+    "build": "cofound build",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "cofound": "file:../../pkg",

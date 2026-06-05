@@ -11,7 +11,7 @@ migrate(db, {
   media: { cols: { /* app schema */ } },
 })
 
-class GenerateThumbnail extends BaseJob {
+class GenerateThumbnailJob extends BaseJob {
   retryLimit = 2
 
   async run({ mediaId }) {
@@ -20,9 +20,9 @@ class GenerateThumbnail extends BaseJob {
 }
 
 const jobs = new JobQueue({ db })
-jobs.register(GenerateThumbnail).start()
+jobs.register(GenerateThumbnailJob).start()
 
-await jobs.push(GenerateThumbnail, { mediaId: 'abc' })
+await jobs.push(GenerateThumbnailJob, { mediaId: 'abc' })
 ```
 
 ## Exports
@@ -50,14 +50,14 @@ migrate(db, {
 Class jobs get a stable type from the class name:
 
 ```js
-class SyncFeed extends BaseJob {
+class SyncFeedJob extends BaseJob {
   async run(params, meta) {
     console.log(params.feedId, meta.currentRetry)
   }
 }
 
-jobs.register(SyncFeed)
-await jobs.push(SyncFeed, { feedId: 1 })
+jobs.register(SyncFeedJob)
+await jobs.push(SyncFeedJob, { feedId: 1 })
 ```
 
 For small jobs, register a named handler:
@@ -75,7 +75,7 @@ await jobs.push('thumb.generate', { mediaId: 'abc' })
 Jobs retry three times by default with exponential backoff. Override this on the class or registration options:
 
 ```js
-class SendEmail extends BaseJob {
+class SendEmailJob extends BaseJob {
   retryLimit = 5
   delay = 10_000
 }
@@ -84,7 +84,7 @@ class SendEmail extends BaseJob {
 `push()` can override delay for one job:
 
 ```js
-await jobs.push(SendEmail, data, { delay: 60_000 })
+await jobs.push(SendEmailJob, data, { delay: 60_000 })
 ```
 
 Return `{ ok: false }`, return `false`, or throw to retry. Return `{ ok: false, meta: { abort: true } }` to fail without more retries.
@@ -100,7 +100,7 @@ const jobs = new JobQueue({ db, concurrency: 2 })
 Or group a job into its own queue:
 
 ```js
-class GenerateThumbnail extends BaseJob {
+class GenerateThumbnailJob extends BaseJob {
   getConcurrency() {
     return { queue: 'thumbnails', limit: 1 }
   }
