@@ -24,8 +24,8 @@ app.ws({
   message: (ws, { json }) => json.event && events[json.event](json.data, ws)
 })
 
-const { unlisten } = await app.listen(config.devPort)
-exit.wait('http dev', unlisten)
+const listener = await app.listen(config.devPort)
+exit.wait('http dev', listener.close)
 
 api.browser.reload.observe(x => publish('reload', x))
 api.browser.redraw.observe(x => publish('redraw', x))
