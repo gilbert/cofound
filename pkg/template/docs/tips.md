@@ -62,6 +62,11 @@ s`a`({
 }, 'video.mp4')
 ```
 
+## Dev Server Backend Restart
+- When running `cofound dev` interactively, press `r` in the dev server terminal to restart the backend Node process.
+- This is faster than killing and relaunching the whole dev server after backend-only edits.
+- Agent workflows should keep the dev server running in a TTY-backed session and send `r` to that session after backend edits. If stdin is closed, restart the dev server with a TTY before relying on the shortcut.
+
 ## Template Literal Interpolation
 - Cofound uses CSS custom properties (`--var`) for template literal interpolations. The interpolated expression becomes the value of the custom property.
 - **Units must be inside the interpolation**, not outside. `top ${val}px` produces `top: var(--xxx)px` which is invalid CSS. Use `top ${val + 'px'}` so the custom property value is `33px` and the rule becomes `top: var(--xxx)` → `top: 33px`.

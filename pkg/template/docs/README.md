@@ -76,5 +76,6 @@ See the [server routes guide](server/routes.md).
   - [Routes](server/routes.md) — `app.get/post/patch/delete`, request/response API
   - [Request Object](server/request-object.md) — `r.body`, `r.readable`, `r.writable`, `r.file`, headers, cookies, lifecycle
   - [Jobs](server/jobs.md) — SQLite-backed background jobs, retries, recovery
+  - [Sessions](server/sessions.md) — SQLite-backed user sessions and signed anonymous cookies
 - [CLI](cli.md) — Commands, package manager, testing framework
 - [Tips & Gotchas](tips.md) — Common pitfalls and best practices
