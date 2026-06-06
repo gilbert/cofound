@@ -12,7 +12,12 @@ import ssr, { wrap } from '../../ssr/index.js'
 import { tryPromise } from '../../src/shared.js'
 
 import config, { resolve } from '../config.js'
-import Acme from '../acme/core.js'
+// Lazy + guarded, mirroring bin/start/node.js: only load the acme module when
+// ACME domains are actually configured. Without this, a deploy that terminates
+// TLS upstream (e.g. behind nginx) and never sets ACME_DOMAINS still crashes on
+// a missing/optional acme module at import time. Acme is only ever dereferenced
+// below behind `config.acme.domains.length &&`, so `false` is safe when unset.
+const Acme = config.acme.domains.length && (await import('../acme/core.js')).default
 
 let sslListener
 exit.wait('https', () => sslListener?.close())
