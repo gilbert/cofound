@@ -25,8 +25,8 @@ const onlyServer = config.static
   ? staticOnly()
   : await serve()
 
-const { unlisten } = await router.listen(config.port)
-exit.wait('http', unlisten)
+const listener = await router.listen(config.port)
+exit.wait('http', listener.close)
 
 process.send('started:' + onlyServer)
 
