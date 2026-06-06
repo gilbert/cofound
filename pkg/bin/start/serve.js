@@ -15,7 +15,7 @@ import config, { resolve } from '../config.js'
 import Acme from '../acme/core.js'
 
 let sslListener
-exit.wait('https', () => sslListener?.unlisten())
+exit.wait('https', () => sslListener?.close())
 
 const { server, mount, src, modified } = await resolve(config.entry)
 const router = Server()
@@ -64,12 +64,12 @@ async function listenHttp() {
         ? r.statusEnd(301, { Location: 'https://' + target.split(':')[0] + r.url + (r.rawQuery ? '?' + r.rawQuery : '') })
         : r.statusEnd(404)
     })
-    const { unlisten } = await redirect.listen(config.httpPort, config.address)
-    exit.wait('http redirect', unlisten)
+    const listener = await redirect.listen(config.httpPort, config.address)
+    exit.wait('http redirect', listener.close)
     console.log('HTTP Redirecting to HTTPS on', config.httpPort) // eslint-disable-line
   } else {
-    const { unlisten } = await router.listen(config.httpPort, config.address)
-    exit.wait('http', unlisten)
+    const listener = await router.listen(config.httpPort, config.address)
+    exit.wait('http', listener.close)
     console.log('HTTP Listening on', config.httpPort) // eslint-disable-line
   }
 }
@@ -120,7 +120,7 @@ function render(r) {
 
 async function listenHttps() {
   isMainThread && config.acme.domains.length && await runAcme()
-  sslListener && (sslListener.unlisten(), sslListener = null)
+  sslListener && (sslListener.close(), sslListener = null)
   sslListener = await router.listen(config.httpsPort, config.address, config.ssl)
   console.log('HTTPS Listening on', config.httpsPort) // eslint-disable-line
 }

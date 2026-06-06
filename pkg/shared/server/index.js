@@ -37,7 +37,7 @@ export default function Server({
   router.addServerName = (...xs) => (uws ? addServerName(...xs) : asn.add(xs), router)
   router.removeServerName = (...xs) => (uws ? removeServerName(...xs) : rsn.add(xs), router)
   router.missingServerName = (...xs) => (uws ? uws.missingServerName(...xs) : msn.add(xs), router)
-  router.close = () => uws && uws.close()
+  router.close = closeServer
 
   return router
 
@@ -130,15 +130,15 @@ export default function Server({
 
         port = parseInt(port)
         wrapper = wrap
-        uws = o.cert
+        const app = uws = o.cert
           ? backend.SSLApp({ cert_file_name: o.cert, key_file_name: o.key, ...o })
           : backend.App(o)
         asn.forEach(xs => addServerName(...xs))
         rsn.forEach(xs => removeServerName(...xs))
-        msn.forEach(xs => uws.missingServerName(...xs))
-        connects.forEach((xs) => uws.connect(...xs))
+        msn.forEach(xs => app.missingServerName(...xs))
+        connects.forEach((xs) => app.connect(...xs))
         wss.forEach(([pattern, handlers]) =>
-          uws.ws(
+          app.ws(
             pattern,
             {
               maxPayloadLength: 128 * 1024,
@@ -148,22 +148,23 @@ export default function Server({
           )
         )
 
-        uws.any('/*', wrap)
+        app.any('/*', wrap)
 
         address
-          ? uws.listen(address, port, callback)
-          : uws.listen(port, o, callback)
+          ? app.listen(address, port, callback)
+          : app.listen(port, o, callback)
 
         function callback(x) {
           if (!x)
             return reject(new Error('Could not listen on ' + port))
 
           handle = x
-          resolve({ port: backend.us_socket_local_port(handle), handle, unlisten })
-        }
-
-        function unlisten() {
-          return handle && backend.us_listen_socket_close(handle)
+          resolve({
+            port: backend.us_socket_local_port(x),
+            handle: x,
+            unlisten: () => unlisten(backend, x),
+            close: () => closeServer(app, x)
+          })
         }
 
         function wrap(res, req) {
@@ -185,12 +186,23 @@ export default function Server({
         drain: catcher('drain', handlers),
         ping: catcher('ping', handlers, message),
         pong: catcher('pong', handlers, message),
-        close: catcher('close', handlers, close)
+        close: catcher('close', handlers, closeWs)
       }
     ])
   }
 
-  function close(fn, ws, code, data) {
+  function unlisten(backend, listenerHandle) {
+    if (listenerHandle === handle) handle = null
+    return listenerHandle && backend.us_listen_socket_close(listenerHandle)
+  }
+
+  function closeServer(app = uws, listenerHandle = handle) {
+    if (listenerHandle === handle) handle = null
+    if (app === uws) uws = null
+    return app && app.close()
+  }
+
+  function closeWs(fn, ws, code, data) {
     ws[$.ws].open = false
     fn && fn(ws[$.ws], code, new Message(data, false))
   }

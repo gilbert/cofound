@@ -3,7 +3,7 @@ import Server from './index.js'
 export async function makeTestServer(setupRoutes) {
   const app = Server({ node: true })
   await setupRoutes(app)
-  const { port, unlisten } = await app.listen(0)
+  const { port, close } = await app.listen(0)
   const base = 'http://localhost:' + port
 
   async function request(method, path, body) {
@@ -29,6 +29,6 @@ export async function makeTestServer(setupRoutes) {
     patch:  (path, body) => request('PATCH', path, body),
     delete: (path)       => request('DELETE', path),
     put:    (path, body) => request('PUT', path, body),
-    close:  ()           => unlisten()
+    close
   }
 }
