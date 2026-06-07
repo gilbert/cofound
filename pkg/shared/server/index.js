@@ -324,7 +324,7 @@ function prepare(match, sub) {
 }
 
 function prepareString(match, sub) {
-  const named = match.match(/\/:([a-z][a-z0-9_]*)?/g)
+  const named = match.match(/\/:([a-zA-Z][a-zA-Z0-9_]*)?/g)
       , wildcard = match.endsWith('*') ? '.*?' : ''
 
   if (wildcard)
