@@ -40,6 +40,20 @@ test('normalizes mp4 video, audio, and chapters', async () => {
   assert.deepEqual(info.chapters, [
     { start: 10.5, title: 'Opening' },
   ])
+  assert.equal(info.createdAt, '2024-06-15T10:30:00.000Z')
+})
+
+test('falls back to stream creation_time and rejects junk values', () => {
+  const fromStream = normalizeProbe({
+    streams: [
+      { codec_type: 'audio', tags: {} },
+      { codec_type: 'video', tags: { creation_time: '2023-01-02T03:04:05Z' } },
+    ],
+  })
+  assert.equal(fromStream.createdAt, '2023-01-02T03:04:05.000Z')
+
+  const junk = normalizeProbe({ format: { tags: { creation_time: 'not a date' } } })
+  assert.equal(junk.createdAt, null)
 })
 
 test('normalizes mkv with multiple audio tracks and forced subtitles', async () => {
@@ -64,6 +78,7 @@ test('handles missing streams and format fields', () => {
   assert.equal(info.container, null)
   assert.equal(info.duration, null)
   assert.equal(info.bitrate, null)
+  assert.equal(info.createdAt, null)
   assert.equal(info.video, null)
   assert.deepEqual(info.audio, [])
   assert.deepEqual(info.subtitles, [])
@@ -92,7 +107,12 @@ test('probe smoke test covers local sample media when ffprobe is available', { s
 
   for (const relative of samples) {
     const file = path.join(root, relative)
-    await access(file)
+    // The samples are gitignored local media — skip quietly where they're absent.
+    try {
+      await access(file)
+    } catch {
+      continue
+    }
     const info = await probe(file)
     assert.equal(info.path, file)
     assert.ok(info.duration == null || info.duration >= 0)

@@ -33,6 +33,7 @@ export function normalizeProbe(input, options = {}) {
     container: stringOrNull(format.format_name),
     duration: numberOrNull(format.duration) ?? maxStreamNumber(streams, 'duration'),
     bitrate: integerOrNull(format.bit_rate),
+    createdAt: creationTime(format, streams),
     video: videoStream ? normalizeVideo(videoStream) : null,
     audio: streams
       .filter(stream => stream.codec_type === 'audio')
@@ -124,6 +125,15 @@ function runJson(bin, args) {
       }
     })
   })
+}
+
+function creationTime(format, streams) {
+  const raw = stringOrNull(format.tags?.creation_time)
+    ?? streams.map(stream => stringOrNull(stream.tags?.creation_time)).find(Boolean)
+    ?? null
+  if (!raw) return null
+  const ms = Date.parse(raw)
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : null
 }
 
 function parseRate(value) {

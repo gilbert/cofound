@@ -25,7 +25,10 @@
   "format": {
     "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
     "duration": "123.456",
-    "bit_rate": "2500000"
+    "bit_rate": "2500000",
+    "tags": {
+      "creation_time": "2024-06-15T10:30:00.000000Z"
+    }
   },
   "chapters": [
     {
