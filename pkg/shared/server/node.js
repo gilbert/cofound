@@ -312,7 +312,9 @@ function invalidCloseCode(x) {
 
 
 function writeHeaders(res) {
-  res._headers.forEach(([k, v]) => res._res.setHeader(k, v))
+  // appendHeader, not setHeader: repeated headers (multiple Set-Cookie) must
+  // all reach the response, matching the uws adapter's per-header writes.
+  res._headers.forEach(([k, v]) => res._res.appendHeader(k, String(v)))
 }
 
 function ondata(ws, x) {

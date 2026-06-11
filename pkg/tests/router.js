@@ -18,4 +18,28 @@ t`router`(
       await server.close()
     }
   }),
+
+  // Regression: the node adapter wrote response headers with setHeader, which
+  // replaces same-named headers — so of HttpSession's two Set-Cookie headers
+  // (create sid + clear anon) only the last survived. They must all arrive,
+  // matching the uws adapter's per-header writes.
+  t`keeps repeated Set-Cookie headers`(async () => {
+    const server = await makeTestServer(app => {
+      app.get('/cookies', r => {
+        r.cookie('first', 'one', { Path: '/' })
+        r.cookie('second', 'two', { Path: '/', 'Max-Age': 0 })
+        r.json({ ok: true })
+      })
+    })
+    try {
+      const res = await fetch('http://localhost:' + server.port + '/cookies')
+      t.is(200, res.status)
+      const cookies = res.headers.getSetCookie()
+      t.is(2, cookies.length)
+      t.is(true, cookies.some(line => line.startsWith('first=one')))
+      t.is(true, cookies.some(line => line.startsWith('second=two')))
+    } finally {
+      await server.close()
+    }
+  }),
 )
