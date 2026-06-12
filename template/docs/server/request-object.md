@@ -47,7 +47,46 @@ await r.body('json')      // parsed JSON
 await r.body('multipart') // parsed multipart parts
 ```
 
-For streaming uploads, use `r.readable`:
+`r.body('multipart')` buffers the whole request before parsing — fine for
+small forms, wrong for file uploads. For multipart uploads of any size, use
+`r.parts()`: an async iterator of parts in document order whose bodies arrive
+as streams, so peak memory stays at one network chunk regardless of file size.
+
+```js
+import crypto from 'node:crypto'
+import { createWriteStream } from 'node:fs'
+import { pipeline } from 'node:stream/promises'
+
+app.post('/assets', async r => {
+  const fields = {}
+  for await (const part of r.parts()) {
+    if (part.filename == null) {           // plain form field
+      fields[part.name] = await part.text()
+      continue
+    }
+    const sha1 = crypto.createHash('sha1') // file part: stream to disk, hash on the fly
+    await pipeline(part.stream, async function* (chunks) {
+      for await (const chunk of chunks) {
+        sha1.update(chunk)
+        yield chunk
+      }
+    }, createWriteStream('/tmp/' + crypto.randomUUID()))
+    fields.checksum = sha1.digest('hex')
+  }
+  r.json(fields)
+})
+```
+
+Each part is `{ name, filename, type, headers, stream, text(), buffer() }` —
+`filename` is `null` for plain fields, `stream` is a `Readable` with
+backpressure, and `text()`/`buffer()` are conveniences that drain it. Consume
+each part's stream before advancing the iterator; parts left unread are
+drained and discarded when you move on. `r.parts()` and `r.body()` both
+consume the request stream, so use one or the other. Malformed input
+(truncated bodies, oversized part headers — cap configurable via
+`r.parts({ maxHeaderSize })`) rejects the iteration.
+
+For raw single-body streaming uploads, use `r.readable`:
 
 ```js
 import { createWriteStream } from 'node:fs'
