@@ -9,6 +9,7 @@ import { pipeline }             from 'node:stream/promises'
 import proxy from './proxy.js'
 import mimes, { compressable }  from './mimes.js'
 import { symbols as $, isPromise }  from './shared.js'
+import { iterateParts, multipartBoundary } from './multipart.js'
 
 const cwd = process.cwd()
 const ipv4 = Buffer.from('00000000000000000000ffff', 'hex')
@@ -143,6 +144,17 @@ export default class Request {
         ? this.options[$.backend].getParts(full, contentType)
         : full
     })
+  }
+
+  // Streaming multipart: an async iterator of parts whose bodies arrive as
+  // Readable streams, so large uploads never buffer in memory. Mutually
+  // exclusive with body() — both consume the request stream.
+  parts(options) {
+    const boundary = multipartBoundary(header(this, 'content-type'))
+    if (!boundary)
+      throw new Error('r.parts() requires a multipart content-type with a boundary')
+
+    return iterateParts(this.readable, boundary, options)
   }
 
   onAborted(fn) {
