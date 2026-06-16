@@ -31,6 +31,41 @@ test('scan indexes media files and persists changed records', async () => {
   assert.equal(storage.saved.length, 3)
 })
 
+test('indexFile adds one file without a full scan, probing only it', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  await writeFile(path.join(root, 'Existing (2020).mp4'), 'existing')
+
+  const probes = []
+  const storage = recordingStorage()
+  const library = await openLibrary({
+    roots: [root],
+    storage,
+    probe: async file => (probes.push(file), { ok: true }),
+  })
+  await library.scan()
+  probes.length = 0
+  storage.saved.length = 0
+
+  // A fresh upload lands on disk; index just that file.
+  const dest = path.join(root, 'IMG_1234.jpg')
+  await writeFile(dest, 'jpeg-bytes')
+  const record = await library.indexFile(dest)
+
+  assert.ok(record)
+  assert.equal(record.rel, 'IMG_1234.jpg')
+  assert.equal(record.type, 'image')
+  assert.equal(record.id, mediaId(root, 'IMG_1234.jpg'))
+  assert.deepEqual(probes, [dest])        // only the new file was probed
+  assert.equal(storage.saved.length, 1)   // only one record persisted
+  assert.equal(library.get(record.id).rel, 'IMG_1234.jpg')
+  assert.equal(library.items().length, 2) // existing + new, no rescan needed
+
+  // Non-media files are skipped; paths outside a root are rejected.
+  await writeFile(path.join(root, 'notes.txt'), 'x')
+  assert.equal(await library.indexFile(path.join(root, 'notes.txt')), null)
+  await assert.rejects(() => library.indexFile('/etc/hostname'), /under a library root/)
+})
+
 test('scan reuses probe data for unchanged files and reprobes changed files', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
   const file = path.join(root, 'Movie (2026).mp4')

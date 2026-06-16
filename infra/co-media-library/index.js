@@ -88,6 +88,48 @@ export async function openLibrary(options = {}) {
       await storage.saveOne(next)
       return next
     },
+
+    // Index a single file (e.g. a fresh upload) without walking the whole
+    // library — full scan() cost is O(files) per call, which is wasteful when
+    // adding one known file. Returns the record, or null if it is not a media
+    // file or not under a root. Does not detect moves or deletions.
+    async indexFile(filePath, indexOptions = {}) {
+      const settings = { ...options, ...indexOptions }
+      const absolute = path.resolve(filePath)
+      const root = roots.find(r => absolute === r || absolute.startsWith(r + path.sep))
+      if (!root) throw new Error('indexFile requires a path under a library root')
+
+      const mediaFile = await loadMediaFile()
+      if (!mediaFile.isMediaFile(absolute, settings)) return null
+
+      const file = await describeFile(root, {
+        path: absolute,
+        type: mediaFile.mediaType(absolute, settings),
+        parsed: mediaFile.parseMediaName(absolute),
+      }, settings)
+
+      const previous = [...records.values()].find(r => recordPathId(r) === file.pathId && !r.deleted)
+      const id = previous?.id || file.pathId
+      const changed = !previous
+        || previous.size !== file.size
+        || previous.mtimeMs !== file.mtimeMs
+        || previous.fingerprint !== file.fingerprint
+        || previous.deleted
+      let probe = previous?.probe
+      if (changed && settings.probe) probe = await settings.probe(file.path, { previous })
+
+      const record = {
+        ...file,
+        id,
+        scannedAt: new Date().toISOString(),
+        probe,
+        metadata: previous?.metadata || {},
+        deleted: false,
+      }
+      records.set(id, record)
+      await storage.saveOne(record)
+      return record
+    },
   }
 
   function items(options = {}) {
@@ -201,26 +243,31 @@ async function currentFiles(roots, options) {
 
   for (const root of roots) {
     for await (const file of scanMediaFiles(root, options)) {
-      const info = await stat(file.path)
-      const rel = slash(path.relative(root, file.path))
-      const pathId = mediaId(root, rel)
-      files.push({
-        pathId,
-        root,
-        path: file.path,
-        rel,
-        name: path.basename(file.path),
-        type: file.type,
-        parsed: file.parsed,
-        size: info.size,
-        mtimeMs: info.mtimeMs,
-        updatedAt: info.mtime.toISOString(),
-        fingerprint: await fingerprint(file.path, info, options),
-      })
+      files.push(await describeFile(root, file, options))
     }
   }
 
   return files
+}
+
+// Build the indexable descriptor for one file (a scanMediaFiles result, or a
+// `{ path, type, parsed }` for a single known file).
+async function describeFile(root, file, options) {
+  const info = await stat(file.path)
+  const rel = slash(path.relative(root, file.path))
+  return {
+    pathId: mediaId(root, rel),
+    root,
+    path: file.path,
+    rel,
+    name: path.basename(file.path),
+    type: file.type,
+    parsed: file.parsed,
+    size: info.size,
+    mtimeMs: info.mtimeMs,
+    updatedAt: info.mtime.toISOString(),
+    fingerprint: await fingerprint(file.path, info, options),
+  }
 }
 
 async function fingerprint(file, info, options) {
