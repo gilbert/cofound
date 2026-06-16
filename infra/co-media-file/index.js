@@ -4,7 +4,7 @@ import path from 'node:path'
 
 export const VIDEO_EXTENSIONS = ['.mp4', '.m4v', '.mkv', '.mov', '.webm', '.avi', '.ts']
 export const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.m4a', '.ogg', '.opus', '.wav']
-export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']
+export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.heif']
 export const IGNORE_NAMES = new Set([
   '$RECYCLE.BIN',
   'System Volume Information',
@@ -33,6 +33,8 @@ const MIME_TYPES = new Map([
   ['.gif', 'image/gif'],
   ['.webp', 'image/webp'],
   ['.avif', 'image/avif'],
+  ['.heic', 'image/heic'],
+  ['.heif', 'image/heif'],
 ])
 
 const DROP_TOKENS = [

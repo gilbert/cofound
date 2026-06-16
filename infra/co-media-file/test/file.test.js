@@ -20,6 +20,10 @@ test('detects video, audio, and image media extensions', () => {
   assert.equal(mediaType('/media/movie.webm'), 'video')
   assert.equal(mediaType('/media/song.mp3'), 'audio')
   assert.equal(mediaType('/media/poster.png'), 'image')
+  // iOS shoots HEIC by default and uploads with uppercase extensions.
+  assert.equal(mediaType('/media/IMG_3563.HEIC'), 'image')
+  assert.equal(mediaType('/media/IMG_3563.heic'), 'image')
+  assert.equal(mediaType('/media/photo.heif'), 'image')
 })
 
 test('parses common movie filenames', () => {
