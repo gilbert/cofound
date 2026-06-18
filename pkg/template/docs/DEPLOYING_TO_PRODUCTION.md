@@ -189,7 +189,13 @@ ACME_EMAIL=you@example.com
 # ACME_TEST=1            # use the staging environment while testing
 ```
 
-With `ACME_DOMAINS` set, Cofound provisions and renews certificates automatically (the default `http-01` challenge needs port `80` reachable from the internet; DNS challenges are also supported). Certificates are cached under `~/.cofound/acme`, which should be on persistent storage so renewals survive restarts.
+With `ACME_DOMAINS` set, Cofound provisions and renews certificates automatically. Certificates are cached under `~/.cofound/acme`, which should be on persistent storage so renewals survive restarts.
+
+> **Bind directly to port 80 for ACME.** Enabling ACME (or any TLS) flips the server into "secure" mode, which forces the HTTP listener onto **port 80** and HTTPS onto **443** — `PORT`/`--port` no longer move the HTTP listener (`pkg/bin/config.js`). This is deliberate: the default `http-01` challenge is validated by Let's Encrypt fetching `http://<domain>/.well-known/acme-challenge/<token>` on port 80, and that port number is fixed by the ACME spec — it cannot be changed. Cofound answers the challenge on that port-80 listener (which otherwise 301-redirects to HTTPS). So for automatic certificates the process must **bind port 80 directly and be reachable on it from the public internet**:
+>
+> - Bind ports below 1024 by running with privileges or granting the capability, e.g. `sudo setcap 'cap_net_bind_service=+ep' $(which node)`, or map `80→…`/`443→…` at the firewall or load balancer.
+> - Don't put another proxy in front that terminates port 80 — if something upstream owns 80, the challenge never reaches Cofound. (In that case, terminate TLS upstream instead and don't set `ACME_DOMAINS`.)
+> - **Exception:** a DNS-based challenge (`ACME_CHALLENGE=dns-…`) validates via DNS records instead of port 80, so it works without binding 80 and also supports wildcard certificates — use it when you can't expose port 80.
 
 ---
 
