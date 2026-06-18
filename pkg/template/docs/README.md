@@ -78,4 +78,6 @@ See the [server routes guide](server/routes.md).
   - [Jobs](server/jobs.md) — SQLite-backed background jobs, retries, recovery
   - [Sessions](server/sessions.md) — SQLite-backed user sessions and signed anonymous cookies
 - [CLI](cli.md) — Commands, package manager, testing framework
+- [Environment Variables](environment-variables.md) — `.env`, the `package.json` `"env"` contract, precedence
+- [Deploying to Production](DEPLOYING_TO_PRODUCTION.md) — Static, server, and hybrid deployment strategies
 - [Tips & Gotchas](tips.md) — Common pitfalls and best practices
