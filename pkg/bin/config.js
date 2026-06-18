@@ -57,6 +57,7 @@ async function fromArgs() {
     envPrefix: 'COFOUND',
     commands: {
       $         : 'help',
+      acme      : { $: 'create', create: 1, list: 1, renew: 1, delete: 1 },
       build     : 1,
       create    : 0,
       develop   : { $: true, script: 1, static: 1 },
@@ -142,7 +143,11 @@ async function fromArgs() {
       '-h': '--help',
       '-v': '--version',
       '-d': '--debug',
-      '--acme-domain': '--acme-domains'
+      '--acme-domain': '--acme-domains',
+      ...(argv[0] === 'acme' ? Object.keys(acme).reduce((acc, x) => (
+        acc['--' + x] = '--acme-' + x,
+        acc
+      ), {}) : {})
     }
   })
 }
@@ -159,7 +164,7 @@ export function getEntry(x, config) {
   const dir = file ? path.dirname(x) : x
 
   if (!needsEntry(config)) {
-    config.create || config.static || process.chdir(env.PWD = dir)
+    config.create || config.acme || config.static || process.chdir(env.PWD = dir)
     return ''
   }
 
