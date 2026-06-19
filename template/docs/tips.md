@@ -5,11 +5,12 @@
 - See the [shorthands table](frontend/css.md#shorthands) for the full list of valid shorthands (e.g., `w`, `h`, `d`, `p`, `m`, `bc`, `c`, etc.)
 - Invalid shorthands are silently passed through as-is, producing broken CSS with no error.
 
-## Component Lifecycle — NO constructors
-- `s.mount(() => { ... return () => ... })` does **NOT** create a one-time constructor. The outer function runs on every redraw, just like the inner one. There is no constructor pattern in cofound.
-- **Never create `s.live()` inside a component function.** Every redraw re-creates them, losing state.
-- **Never fire `s.http.get()` unconditionally inside a component function.** Each call fires a real network request. With `s.redraw()` in the `.then()` callback, this creates an infinite request loop.
-- The correct pattern: use module-scope variables for state, and guard one-time initialization with a `loaded` flag.
+## Component Lifecycle — Stateful Constructors
+- `s(() => { ... return () => ... })` is the stateful component pattern. The outer function initializes the component instance, and the returned function renders on redraw.
+- State declared in the outer function is retained across redraws for that component instance.
+- Creating `s.live()` in the outer function of a stateful component is valid. Creating it in a stateless render function recreates it on every redraw and loses state.
+- Firing `s.http.get()` unconditionally in a stateless render function creates a request/redraw loop. In a stateful component, start one-time async work in the outer function, then update local state and redraw when it resolves.
+- A stateful component initializer reruns when the instance is recreated, such as when its `key` changes, it is removed and mounted again, or it is explicitly reloaded.
 - `oncreate` is **not** a supported lifecycle hook in cofound. It is silently ignored.
 
 ## Controlled Inputs
@@ -28,8 +29,8 @@ For most handlers (button clicks, tab switches, form submits) this is exactly wh
 
 **Fix: set `e.redraw = false`** to tell Cofound to skip the redraw:
 
-```tsx
-oninput={(e: any) => {
+```js
+oninput={(e) => {
   e.redraw = false
   text = e.target.value
   onChange(text)

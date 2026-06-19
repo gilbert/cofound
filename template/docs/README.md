@@ -15,22 +15,30 @@ Cofound (cofound) is a lightweight, reactive JavaScript framework for building d
 
 ## Getting Started
 
-Create a new project:
+Create a new project with npm:
 
 ```bash
-cofound create
+npx cofound create my-cofound-app
+cd my-cofound-app
+npm install
 ```
 
 Start development (launches dev server with hot reload):
 
 ```bash
-cofound dev
+npm run dev
 ```
 
 Build for production:
 
 ```bash
-cofound build
+npm run build
+```
+
+Run the production server:
+
+```bash
+npm run start
 ```
 
 ## How It Works
@@ -77,7 +85,7 @@ See the [server routes guide](server/routes.md).
   - [Request Object](server/request-object.md) — `r.body`, `r.readable`, `r.writable`, `r.file`, headers, cookies, lifecycle
   - [Jobs](server/jobs.md) — SQLite-backed background jobs, retries, recovery
   - [Sessions](server/sessions.md) — SQLite-backed user sessions and signed anonymous cookies
-- [CLI](cli.md) — Commands, package manager, testing framework
+- [CLI](cli.md) — Project scripts, underlying commands, testing framework
 - [Environment Variables](environment-variables.md) — `.env`, the `package.json` `"env"` contract, precedence
 - [Deploying to Production](DEPLOYING_TO_PRODUCTION.md) — Static, server, and hybrid deployment strategies
 - [Tips & Gotchas](tips.md) — Common pitfalls and best practices

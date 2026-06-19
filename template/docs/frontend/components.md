@@ -148,7 +148,7 @@ s.mount(() => people(
 
 ### context `{}`
 
-The context argument holds globally accessible methods which can be used to interact with the broader application. It encapsulates utilities for document manipulation, client-side routing, lifecycle management, and redraw control. You can extend `context` on a per-component basis and use it as a shared data or method binding reference that sub-components can access.
+The context argument holds globally accessible methods which can be used to interact with the broader application. It encapsulates utilities for document manipulation, client-side routing, lifecycle management, and redraw control. You can pass custom context to `s.mount()` and use it as a shared data or method binding reference that sub-components can access.
 
 ```js
 const people = s(({}, children, context) => [
@@ -157,14 +157,11 @@ const people = s(({}, children, context) => [
   context.active && s`h1`('Active!')
 ])
 
-s.mount(({}, [], { doc, state }) => {
-
-  state.active = false
-
+s.mount(({}, [], context) => {
   // The doc key is readonly and represents the document
-  doc.title('My App')
-  doc.lang('en')
-  doc.head([
+  context.doc.title('My App')
+  context.doc.lang('en')
+  context.doc.head([
     s`link`({ rel: 'icon', href: '/favicon.ico', sizes: 'any' }),
     s`meta`({ name: 'apple-mobile-web-app-capable', content: 'yes' })
   ])
@@ -173,6 +170,8 @@ s.mount(({}, [], { doc, state }) => {
     s`li`(person({ name: 'Adam' })),
     s`li`(person({ onclick: () => alert('Hello!') }))
   )
+}, {}, {
+  active: false
 })
 ```
 
@@ -277,9 +276,9 @@ const myButton = s(({ onclick, ...attrs }, children) =>
 )
 ```
 
-## Stateful Component `s(() => () => ...)`
+## Stateful Component
 
-A **stateful component** maintains its own internal data across renders. It still accepts attributes and children, but can track state, respond to events, and trigger redraws. The return signature is a function that returns the view.
+A **stateful component** initializes once for a component instance, then returns a render function that runs on redraw. Variables declared in the outer function are retained across redraws, making this the right place for component-local state, `s.live()` streams, subscriptions, and one-time async setup.
 
 ```js
 const button = s`button
@@ -298,13 +297,46 @@ const counter = s(() => {
     onclick: () => count++
   },
     count === 0
-    ? 'No clicks yet'
-    : `Clicked ${count} time${count > 1 ? 's' : ''}`
+      ? 'No clicks yet'
+      : `Clicked ${count} time${count > 1 ? 's' : ''}`
   )
 })
 ```
 
-> You can access `attrs`, `children` and `state` arguments in the closure callback function. The arguments available to the callback can be used to avoid stale data references.
+The outer function reruns only when the component instance is recreated, for example when its `key` changes, it is removed and mounted again, or it is explicitly reloaded.
+
+`s.live()` streams can also live inside the stateful initializer:
+
+```js
+const liveCounter = s(() => {
+  const count = s.live(0)
+
+  return () => button({
+    onclick: count.set(x => x + 1)
+  },
+    'Count: ', count
+  )
+})
+```
+
+For async setup, start the work in the initializer and redraw when the data arrives:
+
+```js
+const list = s(() => {
+  let items = []
+
+  s.http.get('/api/items').then(x => {
+    items = x
+    s.redraw()
+  })
+
+  return () => s`ul`(
+    items.map(item => s`li`({ key: item.id }, item.name))
+  )
+})
+```
+
+Avoid unconditional async work such as `s.http.get()` in stateless render functions. If that request calls `s.redraw()` when it resolves, the redraw calls the component again and starts another request.
 
 ## Async Component `s({ loading, error }, async () => ...)`
 

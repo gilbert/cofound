@@ -3,7 +3,6 @@
   "version": "1.0.0-rc.1",
   "description": "cofound",
   "type": "module",
-  "types": "cofound.d.ts",
   "main": "src/index.js",
   "scripts": {
     "postinstall": "node shared/server/uws.js",
@@ -20,7 +19,6 @@
   },
   "exports": {
     ".": {
-      "types": "./cofound.d.ts",
       "node": "./ssr/cofound.js",
       "import": "./src/index.js",
       "default": "./src/index.js"

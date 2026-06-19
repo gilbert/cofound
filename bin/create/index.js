@@ -78,8 +78,8 @@ install && cp.execSync('npm install cofound', { stdio: 'inherit' })
 
 !global.print && console.log( // eslint-disable-line
   cd
-    ? '\nRun `cd ' + name + '` and then `cofound dev` to start developing\n'
-    : '\nRun `cofound dev` to start developing\n'
+    ? '\nRun `cd ' + name + '` and then `npm run dev` to start developing\n'
+    : '\nRun `npm run dev` to start developing\n'
 )
 
 rl.close()
