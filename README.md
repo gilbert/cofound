@@ -34,7 +34,7 @@ The core Cofound framework gives an agent everything needed to stand up a full-s
 
 Just as important is what Cofound leaves out:
 
-- **Plain JavaScript** - no TypeScript requirement and no build step to satisfy.
+- **Plain JavaScript** - no compile-time language layer and no build step to satisfy.
 - **No React** - React's core design choices breed accidental complexity. Cofound's frontend framework strips that away.
 - **No bundler in the dev loop** - Easier debugging when your run into errors.
 

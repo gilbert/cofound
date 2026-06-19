@@ -5,13 +5,13 @@ Cofound includes a minimal router. There is always a scoped router available in 
 Every route instance has a `.toString` method, so you can do `href: route + 'sub-page'`. You can use `route.has()` to check which route is active, and cofound also sets an `[active]` attribute for styling.
 
 ```js
-s.mount(({ route }) => [
+s.mount((attrs, children, { route }) => [
   s`nav`(
     ['/', '/about', '/users', '/profile'].map(x =>
       s`a
         background ${ route.has(x) && 'lightblue' }
       `({
-        href: '/' + x
+        href: x
       },
         x.slice(1) || 'Home'
       )
