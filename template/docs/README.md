@@ -76,8 +76,11 @@ See the [server routes guide](server/routes.md).
 - **Frontend**
   - [Components](frontend/components.md) — Elements, styled/stateless/stateful/async components, DAFT, mounting
   - [CSS](frontend/css.md) — Styling, resets, units, variables, interpolation, aliases, shorthands
-  - [Routing](frontend/routing.md) — `s.route`, nested routing, target attribute
+  - [Context](frontend/context.md) — Document helpers, routing context, lifecycle hooks, redraw controls
+  - [Routing](frontend/routing.md) — Matching, nested routing, query params, navigation options
   - [State](frontend/state.md) — `s.live` reactive streams
+  - [Live](frontend/live.md) — Live stream setters, observers, derived streams, redraw behavior
+  - [Window History State](frontend/window-history-state.md) — Route state, replace, scroll restoration
   - [HTTP](frontend/http.md) — `s.http` request methods and options
   - [DOM Helpers](frontend/dom-helpers.md) — `s.is`, `s.on`, `s.event`, `s.animate`, `p`, `s.trust`
 - **Server**

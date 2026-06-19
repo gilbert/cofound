@@ -21,6 +21,8 @@ s`span
 > -  font-size 16;
 > ```
 
+Invalid shorthands are passed through as written. For example, `min-h` is not a Cofound shorthand; use `min-height`.
+
 ## Styles `s.css`
 
 The `s.css` method defines global stylesheets that can be used anywhere in your application.
@@ -161,6 +163,64 @@ s`
 s`
   max-height ${ dom => dom.scrollHeight }
 `
+```
+
+Cofound stores interpolated values in CSS custom properties. Put units inside the interpolation value:
+
+```js
+const top = 33
+
+s`
+  top ${top + 'px'}
+`
+```
+
+Do not put units outside the interpolation:
+
+```js
+s`
+  top ${top}px
+`
+```
+
+That produces invalid CSS because the rule becomes `top: var(--...)px`.
+
+Interpolation is for values, not CSS syntax. Do not inject declarations, selectors, or shorthand fragments:
+
+```js
+const layout = 'd grid; g 8'
+
+s`
+  ${layout}
+  font-size 12
+`
+```
+
+Use styled component overrides for shared style fragments:
+
+```js
+const Label = s`span
+  font-size 12
+  text-transform uppercase
+`
+
+Label`
+  w 110
+`('Size')
+```
+
+If an override only adds styles, start the override with whitespace or a newline. A leading token before whitespace is parsed as the element selector:
+
+```js
+Label`
+  w 110
+`('Size')       // style override
+
+Label`span
+  w 110
+`('Size')       // explicit tag + style override
+
+Label`w 110`('Size') // wrong: `w` is parsed as a tag name
 ```
 
 ## Alias `s.css.alias({...})`
