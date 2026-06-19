@@ -11,7 +11,7 @@ live.toString()                              // String representation
 live.get('')                                 // Derive a new stream from a property
 live.get((value) => {})                      // or function
 live.set()                                   // Set the value directly or via a function
-live.observe((new, old, detach) => {})       // Observe value changes, returns unsubscribe function
+live.observe((next, prev, detach) => {})     // Observe value changes, returns unsubscribe function
 live.detach()                                // Detach all observers
 live.reduce((acc, value, i) => {}, initial)  // Reduce values into a new stream
 live.if(equals, isTrue, isFalse)             // Conditional value based on equality
@@ -38,3 +38,5 @@ const counter = s(() => {
 A stateful component initializer runs when the component instance is first mounted. It runs again only when that instance is recreated, such as when the component is removed and mounted again, its `key` changes, the component initializer function changes, or the instance is explicitly reloaded/refreshed.
 
 > Use `s.live` with consideration and avoid composing streams with large or complex datasets to prevent performance bottlenecks and putting strain on the auto-redraw system.
+
+See [Live](live.md) for setters, observers, derived streams, and redraw behavior.

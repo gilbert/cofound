@@ -175,7 +175,7 @@ s.mount(({}, [], context) => {
 })
 ```
 
-> Treat `context` as a broader application reference. When possible, choose `attrs` for passing data between components or consider inline variables using a [DAFT](#daft) expression.
+> Treat `context` as a broader application reference. When possible, choose `attrs` for passing data between components or consider inline variables using a [DAFT](#daft) expression. See [Context](context.md) for the full context reference.
 
 ## Mounting `s.mount(...)`
 
@@ -215,6 +215,19 @@ s.mount(({ greet }, [], { name }) =>
   { name: 'World' }
 )
 ```
+
+`s.mount()` returns a handle for the mounted tree:
+
+```js
+const mounted = s.mount(app)
+
+mounted.view      // root component/view
+mounted.attrs     // root attrs object
+mounted.context   // root context object
+mounted.unmount() // stop tracking this mount
+```
+
+The root `attrs` and `context` are initial values for the mounted tree. Passing root context is the supported way to provide app-wide capabilities or request-specific values to all descendants.
 
 ## Styled Component `s``(...)`
 
@@ -278,7 +291,7 @@ const myButton = s(({ onclick, ...attrs }, children) =>
 
 ## Stateful Component
 
-A **stateful component** initializes once for a component instance, then returns a render function that runs on redraw. Variables declared in the outer function are retained across redraws, making this the right place for component-local state, `s.live()` streams, subscriptions, and one-time async setup.
+A **stateful component** initializes once for a component instance, then returns a render function that runs on redraw. Variables declared in the outer function are retained across redraws, making this the right place for component-local state, subscriptions, and one-time async setup.
 
 ```js
 const button = s`button
@@ -304,20 +317,6 @@ const counter = s(() => {
 ```
 
 The outer function reruns only when the component instance is recreated, for example when its `key` changes, it is removed and mounted again, or it is explicitly reloaded.
-
-`s.live()` streams can also live inside the stateful initializer:
-
-```js
-const liveCounter = s(() => {
-  const count = s.live(0)
-
-  return () => button({
-    onclick: count.set(x => x + 1)
-  },
-    'Count: ', count
-  )
-})
-```
 
 For async setup, start the work in the initializer and redraw when the data arrives:
 

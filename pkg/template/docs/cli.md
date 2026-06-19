@@ -40,10 +40,24 @@ cofound build       # Build browser assets
 cofound generate    # Generate static HTML
 cofound start       # Start production server
 cofound test        # Run Cofound test files
+cofound acme        # Provision and manage ACME certificates
 cofound purge       # Clear cached projects
 cofound help        # Help screen
 cofound version     # Print current version
 ```
+
+## ACME
+
+`cofound acme` manages Let's Encrypt/ACME certificates used by `cofound start` when direct TLS is enabled.
+
+```bash
+cofound acme create
+cofound acme list
+cofound acme renew
+cofound acme delete
+```
+
+See [Deploying to Production](DEPLOYING_TO_PRODUCTION.md#tls--https) for the `ACME_DOMAINS`, `ACME_EMAIL`, and related environment variables.
 
 ## Testing
 
