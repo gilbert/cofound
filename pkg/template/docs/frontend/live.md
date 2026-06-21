@@ -146,3 +146,27 @@ full.detach()
 Live streams can trigger redraws when they are used in mounted views, but they are not the only redraw mechanism. Cofound also redraws after normal event handlers, async handlers that return promises, route changes, and explicit `s.redraw()` calls.
 
 Use plain state for simple local component state. Use `s.live` when observation, composition, or handler-friendly setters make the code clearer.
+
+## API Summary
+
+```js
+const live = s.live()
+
+live()                                    // read current value
+live(value)                               // set current value
+live.value                                // current value
+live.valueOf()                            // coerce value for primitive operations
+live.toJSON()                             // JSON serialization
+live.toString()                           // string representation
+live.get('property')                      // derive a stream from a property
+live.get(value => value.property)         // derive a stream from a selector
+live.set(value)                           // create a setter function
+live.set(value => nextValue)              // create an updater function
+live.observe((next, prev, detach) => {})  // observe changes; returns unsubscribe
+live.detach()                             // detach all observers
+live.reduce((acc, value, i) => {}, initial)
+live.if(equals, isTrue, isFalse)
+s.live.from(a, b, (aValue, bValue) => {})
+```
+
+Avoid using live streams as a default replacement for local variables. For simple component state, a variable in a stateful component is usually enough. Use live streams when you need their API: observation, derived values, function-shaped setters, or automatic redraws from outside normal event flow.
