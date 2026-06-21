@@ -78,7 +78,6 @@ See the [server routes guide](server/routes.md).
   - [CSS](frontend/css.md) — Styling, resets, units, variables, interpolation, aliases, shorthands
   - [Context](frontend/context.md) — Document helpers, routing context, lifecycle hooks, redraw controls
   - [Routing](frontend/routing.md) — Matching, nested routing, query params, navigation options
-  - [State](frontend/state.md) — `s.live` reactive streams
   - [Live](frontend/live.md) — Live stream setters, observers, derived streams, redraw behavior
   - [Window History State](frontend/window-history-state.md) — Route state, replace, scroll restoration
   - [HTTP](frontend/http.md) — `s.http` request methods and options
