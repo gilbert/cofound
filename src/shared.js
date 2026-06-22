@@ -46,6 +46,22 @@ export function isEvent(x) {
   return x.charCodeAt(0) === 111 && x.charCodeAt(1) === 110 // on
 }
 
+// `dom.src` reflects the RESOLVED absolute URL, while a view's `src` is usually a
+// relative string. Comparing them directly always differed, so src was re-applied
+// on every redraw — and re-assigning a media element's src reloads it, restarting
+// <video>/<audio> playback. Resolve the candidate the same way before comparing
+// so an unchanged src is a no-op.
+export function srcChanged(dom, value) {
+  if (typeof value !== 'string')
+    return dom.src !== value
+  const base = dom.baseURI || (dom.ownerDocument && dom.ownerDocument.baseURI)
+  try {
+    return dom.src !== new URL(value, base || undefined).href
+  } catch (e) {
+    return dom.src !== value
+  }
+}
+
 export function isTagged(x) {
   return x && Array.isArray(x.raw)
 }

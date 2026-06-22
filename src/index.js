@@ -17,6 +17,7 @@ import {
   styleProp,
   resolved,
   mergeTag,
+  srcChanged,
   isTagged,
   getName,
   isEvent,
@@ -1059,7 +1060,7 @@ function attributes(dom, view, context, tagName) {
   if (hasOwn.call(view.attrs, 'srcset') && dom.srcset !== view.attrs.srcset)
     updateAttribute(dom, view.attrs, 'srcset', dom.srcset, view.attrs.srcset, create, context)
 
-  if (hasOwn.call(view.attrs, 'src') && dom.src !== view.attrs.src)
+  if (hasOwn.call(view.attrs, 'src') && srcChanged(dom, view.attrs.src))
     updateAttribute(dom, view.attrs, 'src', dom.src, view.attrs.src, create, context)
 
   if (hasOwn.call(view.attrs, 'href') && (context.hydrating || !prev || prev.href !== view.attrs.href)) {
