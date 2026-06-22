@@ -1,4 +1,5 @@
 import api from './api.js'
+import config from './config.js'
 import { Watcher, tryRead } from './shared.js'
 
 const browserWatch = new Set()
@@ -46,12 +47,16 @@ function node(x) {
   // For TypeScript files that might be imported by other modules,
   // restart the node process to ensure all imports are refreshed
   const isTypescript = x.path.endsWith('.ts') || x.path.endsWith('.tsx')
+  const isProjectJavaScript = x.path.startsWith(config.cwd + '/') && /\.(mjs|cjs|js|jsx)$/.test(x.path)
   const isMainEntry = x.path.includes('/+server/index.') || x.path.includes('/index.')
 
   if (x.next === x.content) {
     api.node.restart(x)
   } else if (isTypescript && !isMainEntry) {
     // Restart for non-entry TypeScript files to ensure imports are refreshed
+    api.node.restart(x)
+  } else if (isProjectJavaScript && !isMainEntry) {
+    // Restart for non-entry JavaScript files to refresh module top-level state
     api.node.restart(x)
   } else {
     api.node.hotload(x)
@@ -66,6 +71,7 @@ function browser(x) {
 
 function both(x) {
   const isTypescript = x.path.endsWith('.ts') || x.path.endsWith('.tsx')
+  const isProjectJavaScript = x.path.startsWith(config.cwd + '/') && /\.(mjs|cjs|js|jsx)$/.test(x.path)
   const isMainEntry = x.path.includes('/+server/index.') || x.path.includes('/index.')
 
   if (x.next === x.content) {
@@ -74,6 +80,10 @@ function both(x) {
       : (api.node.hotload(x), api.browser.reload(x))
   } else if (isTypescript && !isMainEntry) {
     // Restart Node for non-entry TypeScript files, but try to hotload in browser
+    api.node.restart(x)
+    api.browser.hotload(x)
+  } else if (isProjectJavaScript && !isMainEntry) {
+    // Restart Node for non-entry JavaScript files, but try to hotload in browser
     api.node.restart(x)
     api.browser.hotload(x)
   } else {
