@@ -117,6 +117,7 @@ class Response {
     this._res = res
     this._req = req
     this._drain = null
+    this.offset = 0
     this._headers = [['Server', 'cofound']]
     this._res.on('close', () => this._aborted && this._aborted())
     this._res.on('error', () => this._aborted && this._aborted())
