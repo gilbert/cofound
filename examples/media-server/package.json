@@ -8,7 +8,7 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "cofound": "file:../../pkg",
+    "cofound": "file:../..",
     "co-media-file": "file:../../infra/co-media-file",
     "co-media-library": "file:../../infra/co-media-library",
     "co-media-upload": "file:../../infra/co-media-upload"

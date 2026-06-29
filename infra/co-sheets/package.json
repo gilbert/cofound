@@ -2,6 +2,6 @@
   "name": "co-sheets",
   "type": "module",
   "dependencies": {
-    "cofound": "file:../../pkg"
+    "cofound": "file:../.."
   }
 }

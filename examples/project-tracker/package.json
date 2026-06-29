@@ -8,7 +8,7 @@
     "build": "cofound build"
   },
   "dependencies": {
-    "cofound": "file:../../pkg",
+    "cofound": "file:../..",
     "co-sheets": "file:../../infra/co-sheets",
     "co-sync": "file:../../infra/co-sync"
   }

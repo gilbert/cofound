@@ -15,7 +15,7 @@ JIT software takes the opposite stance. Instead of wrangling the general, you bu
 
 To support JIT software, Cofound provides AI agents with solid, foundational features:
 
-- **A concise, fully readable framework** - a full-stack foundation in `pkg/` small enough to fit in a model's working memory.
+- **A concise, fully readable framework** - a full-stack foundation at the repository root, small enough to fit in a model's working memory.
 - **Vendorable infrastructure** - self-contained building blocks in `infra/` that can be copied, pasted, vendored, trimmed, or thrown away as needed.
 - **No magic** - nothing hidden behind layers of indirection; the code you read is the code that runs.
 
@@ -40,7 +40,7 @@ Just as important is what Cofound leaves out:
 
 ### In this repo
 
-- **`pkg/`** - the framework source, published as `cofound` on npm.
+- **Root package** - the framework source, published as `cofound` on npm.
 - **`infra/`** - working infrastructure modules agents can vendor into generated apps, including SQL and other primitives.
 - **`examples/`** - applications that show Cofound and the infrastructure pieces working together.
 - **`docs/`** - documentation for building with Cofound.
@@ -80,7 +80,7 @@ npm run dev
 
 ```sh
 # Framework tests
-cd pkg && npm test
+npm test
 
 # Example app
 cd examples/media-server && npm install && npm run dev

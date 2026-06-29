@@ -30,7 +30,7 @@ A project can declare the variables it needs under an `"env"` key in `package.js
 }
 ```
 
-Each entry's value determines its behavior (`pkg/bin/config.js`):
+Each entry's value determines its behavior (`bin/config.js`):
 
 - **Empty string (`""`)** — required, no default. If it's still unset at production startup, `cofound start` **throws** with `package.json requires env value: <name>`.
 - **Non-empty string** — a committed default, applied only if nothing else already set the variable (good for non-secret config like a public base URL or a default port).

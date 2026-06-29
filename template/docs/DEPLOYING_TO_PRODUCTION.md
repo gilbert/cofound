@@ -9,7 +9,7 @@ These are **not** mutually exclusive. The running server serves the `generate` o
 
 ## How serving actually works
 
-Before the strategies, the one mental model that explains them. A default `cofound start` registers route handlers in order (`pkg/bin/start/serve.js`):
+Before the strategies, the one mental model that explains them. A default `cofound start` registers route handlers in order (`bin/start/serve.js`):
 
 1. **Static files from `dist/`** — the exact output of `cofound generate`.
 2. **Static files from `+public/`** — your pass-through assets.
@@ -191,7 +191,7 @@ ACME_EMAIL=you@example.com
 
 With `ACME_DOMAINS` set, Cofound provisions and renews certificates automatically. Certificates are cached under `~/.cofound/acme`, which should be on persistent storage so renewals survive restarts.
 
-> **Bind directly to port 80 for ACME.** Enabling ACME (or any TLS) flips the server into "secure" mode, which forces the HTTP listener onto **port 80** and HTTPS onto **443** — `PORT`/`--port` no longer move the HTTP listener (`pkg/bin/config.js`). This is deliberate: the default `http-01` challenge is validated by Let's Encrypt fetching `http://<domain>/.well-known/acme-challenge/<token>` on port 80, and that port number is fixed by the ACME spec — it cannot be changed. Cofound answers the challenge on that port-80 listener (which otherwise 301-redirects to HTTPS). So for automatic certificates the process must **bind port 80 directly and be reachable on it from the public internet**:
+> **Bind directly to port 80 for ACME.** Enabling ACME (or any TLS) flips the server into "secure" mode, which forces the HTTP listener onto **port 80** and HTTPS onto **443** — `PORT`/`--port` no longer move the HTTP listener (`bin/config.js`). This is deliberate: the default `http-01` challenge is validated by Let's Encrypt fetching `http://<domain>/.well-known/acme-challenge/<token>` on port 80, and that port number is fixed by the ACME spec — it cannot be changed. Cofound answers the challenge on that port-80 listener (which otherwise 301-redirects to HTTPS). So for automatic certificates the process must **bind port 80 directly and be reachable on it from the public internet**:
 >
 > - Bind ports below 1024 by running with privileges or granting the capability, e.g. `sudo setcap 'cap_net_bind_service=+ep' $(which node)`, or map `80→…`/`443→…` at the firewall or load balancer.
 > - Don't put another proxy in front that terminates port 80 — if something upstream owns 80, the challenge never reaches Cofound. (In that case, terminate TLS upstream instead and don't set `ACME_DOMAINS`.)

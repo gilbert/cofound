@@ -9,7 +9,7 @@
     "test": "node test/run.js"
   },
   "dependencies": {
-    "cofound": "file:../../pkg",
+    "cofound": "file:../..",
     "co-sheets": "file:../../infra/co-sheets"
   }
 }
