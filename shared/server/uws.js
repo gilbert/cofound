@@ -5,9 +5,11 @@ import process from 'node:process'
 import { pipeline } from 'node:stream/promises'
 import { createRequire } from 'node:module'
 
-const version = '34298dcf'
 const arch = process.platform === 'win32' ? 'x64' : process.arch
 const base = 'uws_' + process.platform + '_' + arch + '_' + process.versions.modules
+const version = {
+  uws_linux_x64_115: 'v20.49.0'
+}[base] || '34298dcf'
 const remote = base + '.node'
 const binary = path.join(import.meta.dirname, base + '_' + version + '.node')
 
