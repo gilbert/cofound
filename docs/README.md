@@ -85,6 +85,7 @@ See the [server routes guide](server/routes.md).
 - **Server**
   - [Routes](server/routes.md) — `app.get/post/patch/delete`, request/response API
   - [Request Object](server/request-object.md) — `r.body`, `r.readable`, `r.writable`, `r.file`, headers, cookies, lifecycle
+  - [Schema & Migrations](server/schema.md) — the `col` builder, auto-migration, indexes, JSON columns, backfills
   - [Jobs](server/jobs.md) — SQLite-backed background jobs, retries, recovery
   - [Sessions](server/sessions.md) — SQLite-backed user sessions and signed anonymous cookies
 - [CLI](cli.md) — Project scripts, underlying commands, testing framework

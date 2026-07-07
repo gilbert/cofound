@@ -1,6 +1,6 @@
 {
   "name": "cofound",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "cofound",
   "type": "module",
   "main": "src/index.js",
@@ -44,6 +44,7 @@
   "files": [
     "/bin",
     "/db",
+    "/docs",
     "/jobs",
     "/sessions",
     "/shared",
