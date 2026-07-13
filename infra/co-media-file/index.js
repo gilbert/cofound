@@ -5,6 +5,14 @@ import path from 'node:path'
 export const VIDEO_EXTENSIONS = ['.mp4', '.m4v', '.mkv', '.mov', '.webm', '.avi', '.ts']
 export const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.m4a', '.ogg', '.opus', '.wav']
 export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.heif']
+// Documents are opt-in: a consumer must pass `documentExtensions` (e.g. this
+// list) to have them recognized, so pure media libraries keep ignoring them.
+export const DOCUMENT_EXTENSIONS = [
+  '.pdf',
+  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  '.txt', '.csv', '.md', '.rtf',
+  '.odt', '.ods', '.odp',
+]
 export const IGNORE_NAMES = new Set([
   '$RECYCLE.BIN',
   'System Volume Information',
@@ -35,6 +43,20 @@ const MIME_TYPES = new Map([
   ['.avif', 'image/avif'],
   ['.heic', 'image/heic'],
   ['.heif', 'image/heif'],
+  ['.pdf', 'application/pdf'],
+  ['.doc', 'application/msword'],
+  ['.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  ['.xls', 'application/vnd.ms-excel'],
+  ['.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  ['.ppt', 'application/vnd.ms-powerpoint'],
+  ['.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+  ['.txt', 'text/plain'],
+  ['.csv', 'text/csv'],
+  ['.md', 'text/markdown'],
+  ['.rtf', 'application/rtf'],
+  ['.odt', 'application/vnd.oasis.opendocument.text'],
+  ['.ods', 'application/vnd.oasis.opendocument.spreadsheet'],
+  ['.odp', 'application/vnd.oasis.opendocument.presentation'],
 ])
 
 const DROP_TOKENS = [
@@ -53,16 +75,23 @@ export function mediaType(file, options = {}) {
   const video = options.videoExtensions || VIDEO_EXTENSIONS
   const audio = options.audioExtensions || AUDIO_EXTENSIONS
   const image = options.imageExtensions || IMAGE_EXTENSIONS
+  // Opt-in: default is [] so media-only consumers are unaffected.
+  const document = options.documentExtensions || []
   if (video.includes(ext)) return 'video'
   if (audio.includes(ext)) return 'audio'
   if (image.includes(ext)) return 'image'
+  if (document.includes(ext)) return 'document'
   return null
 }
 
-export function parseMediaName(file) {
-  const type = mediaType(file)
+export function parseMediaName(file, options = {}) {
+  const type = mediaType(file, options)
   const base = path.basename(file, path.extname(file))
   const normalized = normalizeSeparators(base)
+
+  // Documents are named freely (not movie/episode releases), so keep the whole
+  // filename as the title instead of running the year/quality-token heuristics.
+  if (type === 'document') return { kind: 'document', title: normalized }
 
   const episode = parseEpisode(normalized)
   if (episode) return episode
@@ -144,7 +173,7 @@ async function* scanDirectory(dir, options, ignore) {
     yield {
       path: fullPath,
       type: mediaType(fullPath, options),
-      parsed: parseMediaName(fullPath),
+      parsed: parseMediaName(fullPath, options),
     }
   }
 }

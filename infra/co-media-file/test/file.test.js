@@ -5,12 +5,15 @@ import path from 'node:path'
 import { Writable } from 'node:stream'
 import test from 'node:test'
 import {
+  DOCUMENT_EXTENSIONS,
   isMediaFile,
   mediaType,
   parseMediaName,
   scanMediaFiles,
   serveRange,
 } from '../index.js'
+
+const withDocs = { documentExtensions: DOCUMENT_EXTENSIONS }
 
 test('detects video, audio, and image media extensions', () => {
   assert.equal(isMediaFile('/media/movie.mp4'), true)
@@ -73,6 +76,53 @@ test('falls back for unknown media names', () => {
     kind: 'image',
     title: 'cover-art',
   })
+})
+
+test('documents are opt-in: recognized only when documentExtensions is passed', () => {
+  // Default (media-only) behaviour is unchanged — no documentExtensions means
+  // PDFs/Office/text are still not media files.
+  assert.equal(mediaType('/docs/report.pdf'), null)
+  assert.equal(mediaType('/docs/notes.docx'), null)
+  assert.equal(isMediaFile('/docs/report.pdf'), false)
+
+  // Opting in classifies the curated allowlist as 'document'.
+  assert.equal(mediaType('/docs/report.pdf', withDocs), 'document')
+  assert.equal(mediaType('/docs/notes.DOCX', withDocs), 'document')
+  assert.equal(mediaType('/docs/sheet.xlsx', withDocs), 'document')
+  assert.equal(mediaType('/docs/deck.pptx', withDocs), 'document')
+  assert.equal(mediaType('/docs/readme.txt', withDocs), 'document')
+  assert.equal(isMediaFile('/docs/report.pdf', withDocs), true)
+
+  // A still-unlisted extension stays unrecognized even with the option on.
+  assert.equal(mediaType('/docs/archive.xyz', withDocs), null)
+  // Media extensions keep their existing kind regardless of the option.
+  assert.equal(mediaType('/media/movie.mp4', withDocs), 'video')
+})
+
+test('parseMediaName keeps document titles intact (no movie/year heuristics)', () => {
+  assert.deepEqual(parseMediaName('Tax Return 2024.pdf', withDocs), {
+    kind: 'document',
+    title: 'Tax Return 2024',
+  })
+  assert.deepEqual(parseMediaName('Q1_report.docx', withDocs), {
+    kind: 'document',
+    title: 'Q1 report',
+  })
+})
+
+test('scanMediaFiles includes documents when opted in', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'co-media-file-docs-'))
+  await writeFile(path.join(dir, 'poster.png'), 'image')
+  await writeFile(path.join(dir, 'Tax Return 2024.pdf'), 'pdf')
+  await writeFile(path.join(dir, 'archive.xyz'), 'junk')
+
+  const media = []
+  for await (const file of scanMediaFiles(dir)) media.push(path.basename(file.path))
+  assert.deepEqual(media.sort(), ['poster.png'])
+
+  const withDocuments = []
+  for await (const file of scanMediaFiles(dir, withDocs)) withDocuments.push(path.basename(file.path))
+  assert.deepEqual(withDocuments.sort(), ['Tax Return 2024.pdf', 'poster.png'])
 })
 
 test('scanMediaFiles yields only allowlisted media and ignores junk directories', async () => {

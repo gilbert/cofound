@@ -105,7 +105,7 @@ export async function openLibrary(options = {}) {
       const file = await describeFile(root, {
         path: absolute,
         type: mediaFile.mediaType(absolute, settings),
-        parsed: mediaFile.parseMediaName(absolute),
+        parsed: mediaFile.parseMediaName(absolute, settings),
       }, settings)
 
       const previous = [...records.values()].find(r => recordPathId(r) === file.pathId && !r.deleted)
