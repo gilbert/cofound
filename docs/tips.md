@@ -115,3 +115,25 @@ FileHead`w 110px`('Size') // wrong: `w` is parsed as a tag name
 ```
 
 - For genuinely dynamic property values, keep using interpolation: `FileHead\`w ${width + 'px'}\``.
+
+## Keyed Sibling Lists Must Be Dense
+
+- A keyed row list may not contain `null`/`undefined` holes or unkeyed siblings. `[keyedRow, open ? children : null]` renders fine at first, then throws on the redraw that introduces the `null` (e.g. collapsing a tree node) — the patcher reads `.key` off the null sibling (`Cannot read properties of null (reading 'key')`).
+- The failure surfaces as the "Unexpected Error:" boundary replacing the list (the error also lands in `console.error`), so on the page it looks like a mystery broken region.
+- Pinned by `tests/dom.js`.
+- Build a flat array and omit absent entries instead of nulling them:
+
+```js
+// Bad: collapsing introduces a null hole next to keyed rows.
+rows = [dirRow(dir), open ? childRows(dir) : null]
+
+// Good: dense, fully keyed.
+const rows = [dirRow(dir)]
+if (open) rows.push(...childRows(dir))
+```
+
+## Empty-String Attributes Are Dropped
+
+- `{'data-marker': ''}` never reaches the DOM — falsy values other than `0` hit the `removeAttribute` branch — so `querySelector('[data-marker]')` finds nothing (a common test trap).
+- **`true` is the idiomatic marker value**: `{'data-marker': true}` renders `data-marker=""` and IS selectable. A non-empty string (`'1'`) works too.
+- Pinned by `tests/dom.js`.
