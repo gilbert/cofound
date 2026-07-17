@@ -131,7 +131,9 @@ class Response {
     return this
   }
   end(x) { return (writeHeaders(this, null), this._res.end(x), this) }
-  endWithoutBody() { return (this._res.end(), this) }
+  // No-body responses (204/205/304, HEAD) still carry headers — flush them
+  // before ending, matching the uws adapter.
+  endWithoutBody() { return (writeHeaders(this, null), this._res.end(), this) }
   getProxiedRemoteAddress() { throw new Error('Not Implemented') }
   getProxiedRemoteAddressAsText() { throw new Error('Not Implemented') }
   getRemoteAddress() { return Buffer.alloc(0) }
