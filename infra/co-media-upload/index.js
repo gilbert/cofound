@@ -275,19 +275,23 @@ async function patchUpload(r, config, id) {
   if (record.offset === record.length) record.complete = true
   await writeRecord(config, record)
 
+  let completion = null
   if (record.complete && !record.notified) {
     record.notified = true
     await writeRecord(config, record)
-    await config.onComplete?.({
+    completion = await config.onComplete?.({
       id: record.id,
       path: paths(config, id).bin,
       metadata: record.metadata,
       length: record.length,
-    })
+    }) ?? null
   }
 
   const headers = { 'Upload-Offset': String(record.offset) }
   if (record.expiresAt && !record.complete) headers['Upload-Expires'] = record.expiresAt
+  // completeHeaders maps onComplete's return value onto extra response headers
+  // for the completing PATCH — e.g. handing the client the created record's id.
+  if (completion != null) Object.assign(headers, config.completeHeaders?.(completion) || {})
   r.end('', 204, headers)
 }
 
@@ -352,6 +356,7 @@ function normalizeOptions(options) {
     ttl: options.ttl == null ? DEFAULT_UPLOAD_TTL : options.ttl,
     id: options.id,
     onComplete: options.onComplete,
+    completeHeaders: options.completeHeaders,
   }
 }
 

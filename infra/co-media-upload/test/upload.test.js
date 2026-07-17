@@ -184,6 +184,40 @@ test('expired uploads return 410 and are cleaned up', async () => {
   }
 })
 
+test('completeHeaders adds headers from the onComplete result to the final PATCH only', async () => {
+  const server = await uploadTestServer({
+    id: () => 'withheaders',
+    onComplete: () => ({ id: 'record-42' }),
+    completeHeaders: result => ({ 'Upload-Media-Id': result.id }),
+  })
+
+  try {
+    await request(server, 'POST', '/upload', {
+      headers: {
+        'Tus-Resumable': '1.0.0',
+        'Upload-Length': '10',
+        'Upload-Metadata': encodeMetadata({ filename: 'clip.mp4' }),
+      },
+    })
+
+    const first = await request(server, 'PATCH', '/upload/withheaders', {
+      headers: patchHeaders(0, 5),
+      body: 'hello',
+    })
+    assert.equal(first.status, 204)
+    assert.equal(first.headers['upload-media-id'], undefined)
+
+    const second = await request(server, 'PATCH', '/upload/withheaders', {
+      headers: patchHeaders(5, 5),
+      body: 'world',
+    })
+    assert.equal(second.status, 204)
+    assert.equal(second.headers['upload-media-id'], 'record-42')
+  } finally {
+    await server.close()
+  }
+})
+
 test('uploadFile creates, resumes by HEAD, patches chunks, and clears storage', async () => {
   const completed = []
   const server = await uploadTestServer({
