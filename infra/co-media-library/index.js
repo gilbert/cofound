@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, open, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 export const DEFAULT_FINGERPRINT_BYTES = 1024 * 1024
@@ -83,6 +83,46 @@ export async function openLibrary(options = {}) {
         ...record,
         ...patch,
         metadata: merge(record.metadata || {}, patch.metadata || {}),
+      }
+      records.set(id, next)
+      await storage.saveOne(next)
+      return next
+    },
+
+    // Move a file to a new location under a root without changing its media
+    // id — everything keyed on the id (tags, memberships, thumbnails) survives
+    // the move, and the next scan sees the new path as already accounted for.
+    // The destination must be free; callers pick a unique name first.
+    async relocate(id, destPath) {
+      const record = records.get(id)
+      if (!record || record.deleted) return null
+
+      const absolute = path.resolve(destPath)
+      const root = roots.find(r => absolute === r || absolute.startsWith(r + path.sep))
+      if (!root) throw new Error('relocate requires a destination under a library root')
+      if (absolute === record.path) return record
+
+      const occupied = await stat(absolute).then(() => true, err => {
+        if (err.code === 'ENOENT') return false
+        throw err
+      })
+      if (occupied) throw new Error('relocate destination already exists: ' + absolute)
+
+      const mediaFile = await loadMediaFile()
+      await mkdir(path.dirname(absolute), { recursive: true })
+      await moveFile(record.path, absolute)
+
+      const rel = slash(path.relative(root, absolute))
+      const next = {
+        ...record,
+        pathId: mediaId(root, rel),
+        root,
+        path: absolute,
+        rel,
+        name: path.basename(absolute),
+        parsed: mediaFile.parseMediaName(absolute, options),
+        movedFrom: record.rel,
+        movedAt: new Date().toISOString(),
       }
       records.set(id, next)
       await storage.saveOne(next)
@@ -235,6 +275,17 @@ async function readJson(file) {
 
 async function loadMediaFile() {
   return mediaFile ||= await import('co-media-file').catch(() => import('../co-media-file/index.js'))
+}
+
+// rename() fails with EXDEV across mounts — fall back to copy + delete.
+async function moveFile(src, dest) {
+  try {
+    await rename(src, dest)
+  } catch (err) {
+    if (err.code !== 'EXDEV') throw err
+    await copyFile(src, dest)
+    await rm(src, { force: true })
+  }
 }
 
 async function currentFiles(roots, options) {

@@ -314,6 +314,39 @@ test('jsonStorage serializes concurrent saves', async () => {
   ])
 })
 
+test('relocate moves a file on disk and updates the record in place', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  await writeFile(path.join(root, 'Clip (2026).mp4'), 'clip-bytes')
+  const storage = recordingStorage()
+  const library = await openLibrary({ roots: [root], storage })
+  await library.scan()
+  const before = library.items()[0]
+
+  const moved = await library.relocate(before.id, path.join(root, 'dirs', 'col-1', 'Clip (2026).mp4'))
+  assert.equal(moved.id, before.id)   // identity survives the move
+  assert.equal(moved.rel, 'dirs/col-1/Clip (2026).mp4')
+  assert.equal(moved.name, 'Clip (2026).mp4')
+  assert.equal(moved.pathId, mediaId(root, 'dirs/col-1/Clip (2026).mp4'))
+  assert.equal(await readFile(moved.path, 'utf8'), 'clip-bytes')
+  assert.equal(library.get(before.id).rel, 'dirs/col-1/Clip (2026).mp4')
+
+  // A subsequent scan sees the moved file as already accounted for — no
+  // tombstone, no new id.
+  const result = await library.scan()
+  assert.equal(result.deleted, 0)
+  assert.equal(result.added, 0)
+  assert.equal(library.items().length, 1)
+  assert.equal(library.items()[0].id, before.id)
+
+  // Guards: unknown id, destination outside every root, occupied destination.
+  assert.equal(await library.relocate('nope', path.join(root, 'x.mp4')), null)
+  await assert.rejects(() => library.relocate(before.id, path.join(os.tmpdir(), 'elsewhere.mp4')), /root/)
+  await writeFile(path.join(root, 'occupied.mp4'), 'other')
+  await library.indexFile(path.join(root, 'occupied.mp4'))
+  await assert.rejects(() => library.relocate(before.id, path.join(root, 'occupied.mp4')), /exists/)
+  assert.equal(library.get(before.id).rel, 'dirs/col-1/Clip (2026).mp4')
+})
+
 function recordingStorage(records = []) {
   const storage = memoryStorage(records)
   return {
