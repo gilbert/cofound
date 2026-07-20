@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { jsonStorage, mediaId, memoryStorage, openLibrary, weakFingerprint } from '../index.js'
+
+// The real fs with selected operations overridden — the injection point for
+// deterministic failure tests (options.fs on openLibrary).
+function faultFs(overrides = {}) {
+  return { copyFile, mkdir, open, rename, rm, stat, ...overrides }
+}
 
 test('openLibrary requires explicit storage and roots', async () => {
   await assert.rejects(() => openLibrary({ roots: ['media'] }), /storage/)
@@ -345,6 +351,59 @@ test('relocate moves a file on disk and updates the record in place', async () =
   await library.indexFile(path.join(root, 'occupied.mp4'))
   await assert.rejects(() => library.relocate(before.id, path.join(root, 'occupied.mp4')), /exists/)
   assert.equal(library.get(before.id).rel, 'dirs/col-1/Clip (2026).mp4')
+})
+
+test('relocate falls back to copy + delete when rename crosses devices', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  await writeFile(path.join(root, 'clip.mp4'), 'clip-bytes')
+  // Every rename fails with EXDEV, as if src and dest were separate mounts.
+  const fs = faultFs({
+    rename: async () => { throw Object.assign(new Error('cross-device'), { code: 'EXDEV' }) },
+  })
+  const library = await openLibrary({ roots: [root], storage: memoryStorage(), fs })
+  await library.scan()
+  const before = library.items()[0]
+
+  const moved = await library.relocate(before.id, path.join(root, 'sub', 'clip.mp4'))
+  assert.equal(moved.rel, 'sub/clip.mp4')
+  assert.equal(await readFile(moved.path, 'utf8'), 'clip-bytes')
+  await assert.rejects(() => readFile(path.join(root, 'clip.mp4')), { code: 'ENOENT' })
+})
+
+test('a failed relocate leaves the record and the file untouched', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  await writeFile(path.join(root, 'clip.mp4'), 'clip-bytes')
+  const fs = faultFs({
+    rename: async () => { throw Object.assign(new Error('read-only fs'), { code: 'EACCES' }) },
+  })
+  const library = await openLibrary({ roots: [root], storage: memoryStorage(), fs })
+  await library.scan()
+  const before = library.items()[0]
+
+  await assert.rejects(() => library.relocate(before.id, path.join(root, 'sub', 'clip.mp4')), /EACCES|read-only/)
+  assert.equal(library.get(before.id).rel, 'clip.mp4')
+  assert.equal(await readFile(path.join(root, 'clip.mp4'), 'utf8'), 'clip-bytes')
+})
+
+test('a file moved behind the library’s back heals on the next scan', async () => {
+  // The crash window in relocate (file renamed, record not yet saved) looks
+  // exactly like an out-of-band move — the scanner re-associates the file by
+  // fingerprint, keeping the id, instead of tombstoning + re-adding.
+  const root = await mkdtemp(path.join(os.tmpdir(), 'co-media-library-'))
+  await writeFile(path.join(root, 'clip.mp4'), 'clip-bytes-unique-enough')
+  const library = await openLibrary({ roots: [root], storage: memoryStorage() })
+  await library.scan()
+  const before = library.items()[0]
+
+  await mkdir(path.join(root, 'moved'))
+  await rename(path.join(root, 'clip.mp4'), path.join(root, 'moved', 'clip.mp4'))
+  const result = await library.scan()
+  assert.equal(result.moved, 1)
+  assert.equal(result.deleted, 0)
+  assert.equal(result.added, 0)
+  const after = library.get(before.id)
+  assert.equal(after.rel, 'moved/clip.mp4')
+  assert.ok(!after.deleted)
 })
 
 function recordingStorage(records = []) {

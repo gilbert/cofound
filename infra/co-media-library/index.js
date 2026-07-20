@@ -4,6 +4,15 @@ import path from 'node:path'
 
 export const DEFAULT_FINGERPRINT_BYTES = 1024 * 1024
 
+// Media-file operations go through an injectable fs facade (options.fs), so
+// tests can substitute an in-memory fs or wrap the real one to inject faults
+// (EXDEV, ENOSPC, …). Record storage (jsonStorage) stays on the real fs.
+const realFs = { copyFile, mkdir, open, rename, rm, stat }
+
+function fsOf(options) {
+  return options?.fs || realFs
+}
+
 let mediaFile
 
 export async function openLibrary(options = {}) {
@@ -102,15 +111,16 @@ export async function openLibrary(options = {}) {
       if (!root) throw new Error('relocate requires a destination under a library root')
       if (absolute === record.path) return record
 
-      const occupied = await stat(absolute).then(() => true, err => {
+      const fs = fsOf(options)
+      const occupied = await fs.stat(absolute).then(() => true, err => {
         if (err.code === 'ENOENT') return false
         throw err
       })
       if (occupied) throw new Error('relocate destination already exists: ' + absolute)
 
       const mediaFile = await loadMediaFile()
-      await mkdir(path.dirname(absolute), { recursive: true })
-      await moveFile(record.path, absolute)
+      await fs.mkdir(path.dirname(absolute), { recursive: true })
+      await moveFile(record.path, absolute, fs)
 
       const rel = slash(path.relative(root, absolute))
       const next = {
@@ -230,14 +240,15 @@ export function mediaId(root, rel) {
 }
 
 export async function weakFingerprint(file, info, options = {}) {
-  info ||= await stat(file)
+  const fs = fsOf(options)
+  info ||= await fs.stat(file)
   const size = info.size
   const bytes = Math.min(size, options.bytes ?? DEFAULT_FINGERPRINT_BYTES)
   const ranges = fingerprintRanges(size, bytes)
   const hash = createHash('sha1').update(String(size)).update('\0')
   if (!ranges.length) return hash.digest('hex')
 
-  const handle = await open(file, 'r')
+  const handle = await fs.open(file, 'r')
   try {
     for (const range of ranges) {
       const buffer = Buffer.alloc(range.length)
@@ -278,13 +289,13 @@ async function loadMediaFile() {
 }
 
 // rename() fails with EXDEV across mounts — fall back to copy + delete.
-async function moveFile(src, dest) {
+async function moveFile(src, dest, fs = realFs) {
   try {
-    await rename(src, dest)
+    await fs.rename(src, dest)
   } catch (err) {
     if (err.code !== 'EXDEV') throw err
-    await copyFile(src, dest)
-    await rm(src, { force: true })
+    await fs.copyFile(src, dest)
+    await fs.rm(src, { force: true })
   }
 }
 
@@ -304,7 +315,7 @@ async function currentFiles(roots, options) {
 // Build the indexable descriptor for one file (a scanMediaFiles result, or a
 // `{ path, type, parsed }` for a single known file).
 async function describeFile(root, file, options) {
-  const info = await stat(file.path)
+  const info = await fsOf(options).stat(file.path)
   const rel = slash(path.relative(root, file.path))
   return {
     pathId: mediaId(root, rel),
@@ -324,7 +335,7 @@ async function describeFile(root, file, options) {
 async function fingerprint(file, info, options) {
   if (options.fingerprint === false) return null
   if (typeof options.fingerprint === 'function') return options.fingerprint(file, info)
-  return weakFingerprint(file, info, { bytes: options.fingerprintBytes })
+  return weakFingerprint(file, info, { bytes: options.fingerprintBytes, fs: options.fs })
 }
 
 function findMoves({ current, pathRecords, records, roots }) {
