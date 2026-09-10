@@ -100,7 +100,7 @@ function XMLHttpRequest(options) {
         : xhr.responseType === 'json'
         ? JSON.parse(x)
         : xhr.responseType === 'arraybuffer'
-        ? x.buffer
+        ? x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength)
         : null
     },
 
