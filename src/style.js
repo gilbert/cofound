@@ -357,7 +357,7 @@ function startBlock(i) {
   } else {
     rule && (rules[path] = rule)
     selector = (startChar === 64 // @
-      ? aliases(prop) + (value || '') + x.slice(valueStart - 1, i)
+      ? aliases(prop) + (colon ? ':' : ' ') + value + (valueStart === -1 ? '' : x.slice(valueStart, i))
       : x.slice(start, i)
     ).trim()
     selector.indexOf(',') !== -1 && (selector = splitSelector(selector))
@@ -375,6 +375,7 @@ function startBlock(i) {
     rule = rules[path] || ''
   }
   start = valueStart = -1
+  colon = false
   prop = ''
 }
 

@@ -20,6 +20,7 @@ globalThis.cancelAnimationFrame = win.cancelAnimationFrame.bind(win)
 globalThis.getComputedStyle = win.getComputedStyle.bind(win)
 
 const { default: s } = await import('../src/index.js')
+const { cssRules } = await import('../src/style.js')
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 60))
 
@@ -115,6 +116,11 @@ test('internal links forward scroll options to the router', async () => {
     window.scrollTo = originalScrollTo
     history.replaceState(null, '', '/')
   }
+})
+
+test('CSS at-rules preserve functional property definitions', () => {
+  s.css`@supports (padding:max(0)) { p 1 }`
+  assert.equal(cssRules().at(-1).conditionText, '(padding:max(0))')
 })
 
 test('empty-string attributes are dropped; `true` sets a selectable empty attribute', async () => {
