@@ -54,6 +54,27 @@ test('a dense keyed list collapses the same rows without error', async () => {
   assert.equal(document.body.innerHTML, '<div id="dense"><div>A</div></div>')
 })
 
+test('replacing a component runs onremove for its nested component', async () => {
+  let first = true
+  let removals = 0
+  const Child = s((attrs, children, { onremove }) => {
+    onremove(() => removals++)
+    return () => s`span`('child')
+  })
+  const First = s(() => () => Child())
+  const Second = s(() => () => s`span`('replacement'))
+
+  s.mount(document.body, () => first ? First() : Second())
+  await tick()
+  assert.equal(document.body.textContent, 'child')
+
+  first = false
+  s.redraw()
+  await tick()
+  assert.equal(document.body.textContent, 'replacement')
+  assert.equal(removals, 1)
+})
+
 test('empty-string attributes are dropped; `true` sets a selectable empty attribute', async () => {
   s.mount(document.body, () => s`div#attrs`(
     s`div`({ key: 'empty', 'data-empty': '' }),

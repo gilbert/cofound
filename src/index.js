@@ -866,7 +866,7 @@ class Stack {
     instance.promise = next && isFunction(next.then) && next
     instance.stateful = instance.promise || (isFunction(next) && !next[$s])
     instance.view = instance.promise ? optimistic ? this.xs[this.i].view : instance.loading : next
-    optimistic || (this.xs.length = this.i)
+    optimistic || this.cut()
     this.top = this.i
     return this.xs[this.i++] = instance
   }
@@ -887,7 +887,6 @@ class Stack {
     for (let i = top; i < this.xs.length; i++)
       this.xs[i].onremoves && this.xs[i].onremoves.forEach(fn => fn())
     this.xs.length = top
-    window.fun = this.xs
   }
 }
 
