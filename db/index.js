@@ -111,6 +111,10 @@ function stringifyDebug(obj) {
   }
 }
 
+function quoteIdentifier(name) {
+  return `\`${String(name).replaceAll('`', '``')}\``
+}
+
 // ---------------------------------------------------------------------------
 // Model base class
 // ---------------------------------------------------------------------------
@@ -123,9 +127,13 @@ export class Model {
     this.defaultWhere = {}
   }
 
-  findAll(_attrs, extraSql = '') {
+  findAll(_attrs, optionsOrExtraSql = '') {
+    const options = typeof optionsOrExtraSql === 'string'
+      ? { extraSql: optionsOrExtraSql }
+      : optionsOrExtraSql
+    const { select, extraSql = '' } = options
     const attrs = { ...this.defaultWhere, ..._attrs }
-    const stmt = this.db.prepare(`${this._selectWhere(attrs)} ${extraSql}`)
+    const stmt = this.db.prepare(`${this._selectWhere(attrs, select)} ${extraSql}`)
     return stmt.all(this.serialize(attrs)).map((row) => this.deserialize(row))
   }
 
@@ -155,15 +163,15 @@ export class Model {
     return result !== undefined && result !== null
   }
 
-  findByOptional(_attrs) {
+  findByOptional(_attrs, { select } = {}) {
     const attrs = { ...this.defaultWhere, ..._attrs }
-    const stmt = this.db.prepare(`${this._selectWhere(attrs)} LIMIT 1`)
+    const stmt = this.db.prepare(`${this._selectWhere(attrs, select)} LIMIT 1`)
     const row = stmt.get(this.serialize(attrs)) || null
     return row && this.deserialize(row)
   }
 
-  findBy(_attrs) {
-    const row = this.findByOptional(_attrs)
+  findBy(_attrs, options) {
+    const row = this.findByOptional(_attrs, options)
     if (!row) {
       throw new Error(`Could not find ${this.tablename} with attrs: ${stringifyDebug(_attrs)}`)
     }
@@ -226,7 +234,7 @@ export class Model {
 
   // --- Internal methods ---
 
-  _selectWhere(where) {
+  _selectWhere(where, select) {
     const cols = Object.keys(where).filter(
       (c) => where[c] !== undefined && c in this.table.cols,
     )
@@ -234,7 +242,28 @@ export class Model {
       ? `WHERE ${cols.map((c) => whereCol(c, where[c])).join(' AND ')}`
       : ''
     log(whereSql)
-    return `SELECT * FROM ${this.tablename} ${whereSql}`
+    return `SELECT ${this._selectColumns(select)} FROM ${this.tablename} ${whereSql}`
+  }
+
+  _selectColumns(select) {
+    if (select === undefined) return '*'
+    if (Array.isArray(select)) return select.map(quoteIdentifier).join(', ')
+
+    if (!select || !Array.isArray(select.exclude)) {
+      throw new Error('[Model] select must be an array or an object with an exclude array')
+    }
+
+    const columns = [...new Set(Object.keys(this.table.cols).concat('created_at', 'updated_at'))]
+    const unknown = select.exclude.filter((column) => !columns.includes(column))
+    if (unknown.length) {
+      throw new Error(
+        `[Model] Cannot exclude unknown column(s) from ${this.tablename}: ${unknown.join(', ')}`,
+      )
+    }
+    return columns
+      .filter((column) => !select.exclude.includes(column))
+      .map(quoteIdentifier)
+      .join(', ')
   }
 
   _insert(_attrs, getSql) {

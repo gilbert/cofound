@@ -179,6 +179,67 @@ t`Model: insert & find`(withModels,
     return ['Alice', C.findBy({ email: 'alice@test.com' }).name]
   }),
 
+  t`findAll selects included columns and deserializes them`(({ C }) => {
+    const lastSeenAt = 1700000000000
+    C.insert({ name: 'Alice', active: false, meta: { role: 'admin' }, last_seen_at: lastSeenAt })
+    const rows = C.findAll({}, { select: ['name', 'active', 'meta', 'last_seen_at'] })
+    eq([{ name: 'Alice', active: false, meta: { role: 'admin' }, last_seen_at: lastSeenAt }], rows)
+  }),
+
+  t`findAll excludes columns`(({ C }) => {
+    C.insert({ name: 'Alice', email: 'alice@test.com', meta: { role: 'admin' } })
+    const row = C.findAll({}, { select: { exclude: ['email', 'meta', 'created_at'] } })[0]
+    t.is(false, 'email' in row)
+    t.is(false, 'meta' in row)
+    t.is(false, 'created_at' in row)
+    t.is(true, 'updated_at' in row)
+    return ['Alice', row.name]
+  }),
+
+  t`exclusion includes implicit timestamp columns`(() => {
+    const db = makeDb(':memory:')
+    const notes = { cols: { body: col.text() } }
+    migrate(db, { notes }, { silent: true })
+    const N = new Model(db, 'notes', notes)
+    N.insert({ body: 'Remember this' })
+    const row = N.findBy({ body: 'Remember this' }, {
+      select: { exclude: ['created_at'] },
+    })
+    eq(['body', 'updated_at'], Object.keys(row).sort())
+  }),
+
+  t`findBy and findByOptional select included columns`(({ C }) => {
+    C.insert({ name: 'Alice', email: 'alice@test.com' })
+    eq({ email: 'alice@test.com' }, C.findBy({ name: 'Alice' }, { select: ['email'] }))
+    eq({ name: 'Alice' }, C.findByOptional({ email: 'alice@test.com' }, { select: ['name'] }))
+    return [null, C.findByOptional({ name: 'missing' }, { select: ['name'] })]
+  }),
+
+  t`findBy still throws on missing with select`(({ C }) => {
+    let threw = false
+    try { C.findBy({ name: 'missing' }, { select: ['name'] }) } catch { threw = true }
+    return [true, threw]
+  }),
+
+  t`selection does not affect where columns`(({ C }) => {
+    C.insert({ name: 'Alice', active: true })
+    C.insert({ name: 'Bob', active: false })
+    const rows = C.findAll({ active: true }, { select: ['name'] })
+    eq([{ name: 'Alice' }], rows)
+  }),
+
+  t`unknown excluded columns throw a Model error`(({ C }) => {
+    let message = ''
+    try { C.findAll({}, { select: { exclude: ['embedding'] } }) } catch (error) { message = error.message }
+    return [true, message.includes('[Model] Cannot exclude unknown column(s)')]
+  }),
+
+  t`invalid included columns are reported by SQLite`(({ C }) => {
+    let threw = false
+    try { C.findAll({}, { select: ['not_a_column'] }) } catch { threw = true }
+    return [true, threw]
+  }),
+
   t`count returns correct count`(({ C }) => {
     C.insert({ name: 'Alice' })
     C.insert({ name: 'Bob' })
@@ -388,6 +449,7 @@ t`defaultWhere`(
     C.insert({ name: 'Bob', active: false })
     t.is(1, AC.findAll({}).length)
     t.is('Alice', AC.findAll({})[0].name)
+    eq([{ name: 'Alice' }], AC.findAll({}, { select: ['name'] }))
     t.is(1, AC.count({}))
     return [false, AC.exists({ name: 'Bob' })]
   }),
@@ -409,6 +471,14 @@ t`extraSql`(withModels,
     C.insert({ name: 'Bob' })
     C.insert({ name: 'Charlie' })
     return [2, C.findAll({}, 'LIMIT 2').length]
+  }),
+
+  t`findAll options combine select and extraSql`(({ C }) => {
+    C.insert({ name: 'Charlie' })
+    C.insert({ name: 'Alice' })
+    C.insert({ name: 'Bob' })
+    const rows = C.findAll({}, { select: ['name'], extraSql: 'ORDER BY name ASC LIMIT 2' })
+    eq([{ name: 'Alice' }, { name: 'Bob' }], rows)
   }),
 )
 

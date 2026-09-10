@@ -206,6 +206,28 @@ Models built on `cofound/db`'s `Model` (via `makeModels`) serialize on write and
 
 Querying JSON columns supports nested-path equality (`where: { meta: { plan: 'pro' } }` → `json_extract(...)`), but **array-valued** JSON queries are not supported and throw. See the model/query documentation for the full `Sql.in`, `Sql.gt`, `Sql.like`, etc. operator set.
 
+### Selecting returned columns
+
+The row-returning helpers `findAll`, `findByOptional`, and `findBy` accept a `select` option when a query does not need every column:
+
+```js
+users.findAll({ active: true }, { select: ['name', 'email'] })
+users.findBy({ id }, { select: { exclude: ['embedding'] } })
+```
+
+Inclusion and exclusion lists are arrays. The returned objects contain only the selected columns, with their normal Model deserialization still applied. Selection affects only the returned row: filters, including `defaultWhere`, can use columns that are not selected.
+
+`findAll` also accepts `extraSql` in the options object, so projection can be combined with ordering or limiting:
+
+```js
+users.findAll({}, {
+  select: ['name', 'email'],
+  extraSql: 'ORDER BY name LIMIT 20',
+})
+```
+
+The existing string form remains supported: `findAll({}, 'ORDER BY name')`. Unknown exclusion columns throw a Model error; invalid inclusion columns are reported by SQLite.
+
 ### Custom transforms
 
 For a column whose stored form differs from its in-memory form, attach a `.transform({ serialize, deserialize, default })`:
