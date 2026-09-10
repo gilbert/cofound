@@ -92,6 +92,31 @@ test('an unchanged srcset is not reassigned after the browser normalizes it', as
   assert.equal(assignments, 0)
 })
 
+test('internal links forward scroll options to the router', async () => {
+  const originalScrollTo = window.scrollTo
+  let scrolls = 0
+  window.scrollTo = () => scrolls++
+
+  try {
+    history.replaceState(null, '', '/')
+    s.mount(document.body, () => s`a#no-scroll`({ href: '/next', scroll: false }, 'Next'))
+    await tick()
+    scrolls = 0
+
+    document.querySelector('#no-scroll').dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      button: 0,
+    }))
+    await tick()
+
+    assert.equal(location.pathname, '/next')
+    assert.equal(scrolls, 0)
+  } finally {
+    window.scrollTo = originalScrollTo
+    history.replaceState(null, '', '/')
+  }
+})
+
 test('empty-string attributes are dropped; `true` sets a selectable empty attribute', async () => {
   s.mount(document.body, () => s`div#attrs`(
     s`div`({ key: 'empty', 'data-empty': '' }),

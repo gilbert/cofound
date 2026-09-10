@@ -218,8 +218,7 @@ function link(dom, attrs, route) {
       !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey
     ) {
       e.preventDefault()
-      const state = dom[$attr].state
-      route(dom.getAttribute('href'), { state, redraw: attrs.redraw, replace: attrs.replace })
+      route(dom.getAttribute('href'), dom[$attr])
     }
   })
 }
