@@ -24,10 +24,12 @@ export default function http(x, {
   headers = {},
   config,
   timeout = 0,
+  signal,
   ...options
 } = {}) {
   const origin = typeof 'chrome' === 'undefined' && new Error()
   const xhr = new window.XMLHttpRequest(options)
+  signal?.addEventListener('abort', () => xhr.abort())
   let full = false
   const promise = new Promise((resolve, reject) => {
     let accept
@@ -57,6 +59,7 @@ export default function http(x, {
     })
     xhr.addEventListener('error', reject)
     xhr.addEventListener('abort', () => reject(new Error('ABORTED')))
+    xhr.addEventListener('timeout', () => reject(new Error('TIMEOUT')))
     query && (query = new URLSearchParams(query)) && query.size && query.forEach((v, k) => url.searchParams.append(k, v))
     xhr.open(method, '' + url, true, user, pass)
     xhr.timeout = timeout
@@ -86,14 +89,10 @@ export default function http(x, {
     throw x
   })
 
-  Object.defineProperty(promise, 'xhr', {
-    get() {
-      full = true
-      return promise
-    }
+  return Object.defineProperties(promise, {
+    abort: { value: () => xhr.abort(), enumerable: true },
+    xhr: { get: () => (full = true, promise) }
   })
-
-  return promise
 }
 
 function statusError(xhr) {

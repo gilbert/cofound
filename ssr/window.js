@@ -1,3 +1,6 @@
+import http from 'node:http'
+import https from 'node:https'
+
 import window from '../src/window.js'
 import { asLocation } from './shared.js'
 import { hasOwn, noop } from '../src/shared.js'
@@ -81,6 +84,8 @@ function XMLHttpRequest(options) {
     , loaded = 0
     , total
     , responseText
+    , aborted = false
+    , timeout = false
 
   const xhr = {
     UNSENT:           0,
@@ -123,8 +128,9 @@ function XMLHttpRequest(options) {
     },
 
     abort() {
+      aborted = true
       state(xhr.UNSENT)
-      req && req.abort()
+      req ? req.destroy() : emit('abort', { type: 'abort', total, loaded })
     },
 
     getResponseHeader(name) {
@@ -155,13 +161,8 @@ function XMLHttpRequest(options) {
     },
 
     async send(data) {
-      const http = (url.startsWith('https:')
-        ? await import('https')
-        : await import('http')
-      ).default
-
       try {
-        req = http.request(url, {
+        req = (url.startsWith('https:') ? https : http).request(url, {
           headers,
           method,
           auth,
@@ -187,7 +188,8 @@ function XMLHttpRequest(options) {
           res.on('error', e => emit('error', e))
         })
         req.on('error', error)
-        xhr.timeout && (req.setTimeout(xhr.timeout), req.on('timeout', () => req.abort()))
+        req.on('close', () => aborted && error('abort'))
+        xhr.timeout && (req.setTimeout(xhr.timeout), req.on('timeout', () => (timeout = true, req.destroy())))
         data !== undefined && req.write(data)
         req.end()
       } catch (e) {
@@ -208,7 +210,11 @@ function XMLHttpRequest(options) {
   function error(error) {
     // xhr.response = null
     xhr.status = 0
-    emit('error', error)
+    timeout
+      ? emit('timeout', { type: 'timeout', total, loaded })
+      : aborted
+      ? emit('abort', { type: 'abort', total, loaded })
+      : emit('error', error)
     emit('loadend', { loaded, total, lengthComputable: total === 0 || total > 0 })
   }
 
