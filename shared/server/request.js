@@ -590,19 +590,25 @@ async function readFile(r, file, type, compressor, o) {
 function stream(r, type, { handle, stat, compressor }, options) {
   const { size, mtime } = stat
       , range = r.headers.range || ''
-      , highWaterMark = options.highWaterMark || options.minStreamSize
-      , end = parseInt(range.slice(range.indexOf('-') + 1)) || size - 1
-      , start = parseInt(range.slice(6, range.indexOf('-')) || size - end - 1)
+
+  if (range.indexOf(',') !== -1)
+    return r.header(416, { 'Content-Range': 'bytes */' + size }).end('Multi Ranges is not supported')
+
+  const highWaterMark = options.highWaterMark || options.minStreamSize
+      , dash = range.indexOf('-')
+      , end = Math.min(size - 1, dash === 6 ? size - 1 : dash === range.length - 1 ? size - 1 : +range.slice(dash + 1))
+      , start = Math.max(0, dash === 6 ? size - range.slice(dash + 1) : +range.slice(6, dash))
       , total = end - start + 1
 
   if (end >= size || total <= 0)
-    return r.header(416, { 'Content-Range': 'bytes */' + (size - 1) }).end('Range Not Satisfiable')
+    return r.header(416, { 'Content-Range': 'bytes */' + size }).end('Range Not Satisfiable')
 
-  r.header(range ? 206 : 200, {
-    'Accept-Ranges': range ? 'bytes' : null,
+  const status = range && size !== total ? 206 : 200
+  r.header(status, {
+    'Accept-Ranges': 'bytes',
     'Last-Modified': mtime.toUTCString(),
     'Content-Encoding': compressor,
-    'Content-Range': range ? 'bytes ' + start + '-' + end + '/' + size : null,
+    'Content-Range': status === 206 ? 'bytes ' + start + '-' + end + '/' + size : null,
     'Content-Type': r.type || type,
     ETag: createEtag(mtime, size, compressor)
   })
@@ -610,7 +616,7 @@ function stream(r, type, { handle, stat, compressor }, options) {
   if (noBody(r)) {
     compressor
       ? r.header('Transfer-Encoding', 'chunked')
-      : r.header('Content-Length', size)
+      : r.header('Content-Length', status === 206 ? total : size)
     return Promise.resolve(r.end())
   }
 
