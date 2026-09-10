@@ -481,10 +481,10 @@ function keyed(parent, context, as, bs, keys, after, ref) {
       , next = new Set()
 
   for (const x of bs) {
-    if (x.key === undefined)
+    if (x && x.key === undefined)
       return nonKeyed(parent, context, bs, keys, ref, after)
 
-    next.add(x.key)
+    x && next.add(x.key)
   }
 
   let ai = as.length - 1
@@ -494,6 +494,11 @@ function keyed(parent, context, as, bs, keys, after, ref) {
     , temp = -1
 
   outer: while (true) { // eslint-disable-line
+    if (b == null) {
+      b = bs[--bi]
+      continue
+    }
+
     while (a && !next.has(a.key)) {
       remove(a.dom, parent)
       map.delete(a.key)

@@ -2,9 +2,7 @@
 // The globals must be bound BEFORE the browser entry is imported —
 // src/window.js captures `window` at import time — hence the dynamic import.
 //
-// These pin two behaviors documented in docs/tips.md ("Keyed Sibling Lists
-// Must Be Dense" and "Empty-String Attributes Are Dropped"): if either test
-// starts failing, the renderer changed and the docs need updating.
+// These pin renderer behaviors documented in docs/tips.md.
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { Window } from 'happy-dom'
@@ -25,30 +23,19 @@ const { default: s } = await import('../src/index.js')
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 60))
 
-test('a null hole introduced into a keyed list throws into the error boundary', async () => {
-  const errors = []
-  const original = console.error
-  console.error = (...args) => errors.push(args.map(String).join(' '))
-  try {
-    let open = true
-    s.mount(document.body, () => s`div#list`([
-      s`div`({ key: 'a' }, 'A'),
-      open ? s`div`({ key: 'b' }, 'B') : null,
-    ]))
-    await tick()
-    // The hole is only a problem once it EXISTS: the initial render is fine.
-    assert.equal(document.body.innerHTML, '<div id="list"><div>A</div><div>B</div></div>')
+test('a null hole can be introduced into a keyed list', async () => {
+  let open = true
+  s.mount(document.body, () => s`div#list`([
+    s`div`({ key: 'a' }, 'A'),
+    open ? s`div`({ key: 'b' }, 'B') : null,
+  ]))
+  await tick()
+  assert.equal(document.body.innerHTML, '<div id="list"><div>A</div><div>B</div></div>')
 
-    open = false
-    s.redraw()
-    await tick()
-    // The patch reads .key off the null sibling and the boundary replaces the
-    // whole list — the only page-visible symptom of the mistake.
-    assert.match(document.body.textContent, /Unexpected Error: Cannot read properties of null/)
-    assert.match(errors.join('\n'), /Cannot read properties of null/)
-  } finally {
-    console.error = original
-  }
+  open = false
+  s.redraw()
+  await tick()
+  assert.equal(document.body.innerHTML, '<div id="list"><div>A</div></div>')
 })
 
 test('a dense keyed list collapses the same rows without error', async () => {
