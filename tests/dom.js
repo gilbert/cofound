@@ -75,6 +75,23 @@ test('replacing a component runs onremove for its nested component', async () =>
   assert.equal(removals, 1)
 })
 
+test('an unchanged srcset is not reassigned after the browser normalizes it', async () => {
+  s.mount(document.body, () => s`img#responsive`({ srcset: '/small.png 1x, /large.png 2x' }))
+  await tick()
+
+  const image = document.querySelector('#responsive')
+  let assignments = 0
+  Object.defineProperty(image, 'srcset', {
+    configurable: true,
+    get: () => 'http://cofound.test/small.png 1x, http://cofound.test/large.png 2x',
+    set: () => assignments++,
+  })
+
+  s.redraw()
+  await tick()
+  assert.equal(assignments, 0)
+})
+
 test('empty-string attributes are dropped; `true` sets a selectable empty attribute', async () => {
   s.mount(document.body, () => s`div#attrs`(
     s`div`({ key: 'empty', 'data-empty': '' }),
