@@ -5,7 +5,7 @@ import { symbols as $ } from './shared.js'
 
 const nets = new Map()
 const tlss = new Map()
-const keepAlive = parseInt(process.env.EY_PROXY_KEEP_ALIVE || (2 * 60 * 1000))
+const keepAlive = parseInt(process.env.COFOUND_PROXY_KEEP_ALIVE || (2 * 60 * 1000))
 
 export default function(r, url, options = {}) {
   url = new URL(url)

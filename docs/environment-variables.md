@@ -69,5 +69,9 @@ These are interpreted by the framework and CLI:
 | `SSL_MODE` | TLS port behavior: `redirect` (default), `only`, or `optional`. |
 | `ACME_DOMAINS`, `ACME_EMAIL` | Domains and contact for automatic Let's Encrypt certificates. |
 | `ACME_CA`, `ACME_TEST`, `ACME_CHALLENGE` | ACME certificate authority (default `letsencrypt`), staging toggle, and challenge type (default `http-01`). |
+| `COFOUND_PROXY_KEEP_ALIVE` | Idle lifetime for reusable upstream proxy connections, in milliseconds. Defaults to 120000. |
+| `COFOUND_MIN_STREAM_SIZE` | File size at which built-in file responses switch to streaming. Defaults to 524288 bytes. |
+| `COFOUND_MIN_CACHE_SIZE` | Maximum built-in file response size eligible for the in-memory cache. Defaults to 131072 bytes. |
+| `COFOUND_MIN_COMPRESS_SIZE` | Minimum built-in file response size eligible for compression. Defaults to 1280 bytes. |
 
 See [Deploying to Production](DEPLOYING_TO_PRODUCTION.md) for how these apply in each deployment strategy, and [Sessions](server/sessions.md) for secret-backed session configuration.

@@ -513,9 +513,9 @@ export default class Request {
     options = Object.assign({
       lastModified: true,
       etag: true,
-      minStreamSize: process.env.EY_MIN_STREAM_SIZE || (512 * 1024),
-      maxCacheSize: process.env.EY_MIN_CACHE_SIZE || (128 * 1024),
-      minCompressSize: process.env.EY_MIN_COMPRESS_SIZE || 1280,
+      minStreamSize: process.env.COFOUND_MIN_STREAM_SIZE || (512 * 1024),
+      maxCacheSize: process.env.COFOUND_MIN_CACHE_SIZE || (128 * 1024),
+      minCompressSize: process.env.COFOUND_MIN_COMPRESS_SIZE || 1280,
       cache: true
     }, options)
 
