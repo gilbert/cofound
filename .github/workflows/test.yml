@@ -4,12 +4,15 @@ on: [push, pull_request]
 
 jobs:
   test-linux:
-    name: ubuntu-latest
+    name: ubuntu-latest, node ${{ matrix.node }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node }}
       - run: npm ci
       - run: npm test

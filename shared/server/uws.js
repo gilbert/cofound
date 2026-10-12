@@ -7,6 +7,9 @@ import { createRequire } from 'node:module'
 
 const arch = process.platform === 'win32' ? 'x64' : process.arch
 const base = 'uws_' + process.platform + '_' + arch + '_' + process.versions.modules
+// Linux builds at 34298dcf need glibc 2.35 (Ubuntu 22.04+); v20.49.0 builds need
+// 2.27 but stop at Node 22. Node 20 keeps the older build so it still loads on
+// Ubuntu 20.04; Node 24 needs a 22.04+ host.
 const version = {
   uws_linux_x64_115: 'v20.49.0'
 }[base] || '34298dcf'
